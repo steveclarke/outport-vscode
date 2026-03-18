@@ -20,14 +20,14 @@ export function updateStatusBar(result: CliResult<PortsOutput> | null): void {
 
   if (result.ok) {
     const { project, instance } = result.data;
-    statusBarItem.text = `$(globe) ${project} [${instance}]`;
+    statusBarItem.text = `$(plug) ${project} [${instance}]`;
     statusBarItem.tooltip = 'Click to show Outport sidebar';
     statusBarItem.show();
     return;
   }
 
   if (result.error.kind === 'not-registered') {
-    statusBarItem.text = `$(globe) (run outport up)`;
+    statusBarItem.text = `$(plug) (run outport up)`;
     statusBarItem.tooltip = 'Outport config found but not registered — run outport up';
     statusBarItem.show();
     return;
