@@ -49,17 +49,25 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
     }
 
     const items: OutportTreeItem[] = [];
+    const seen = new Set<string>();
     for (const folder of folders) {
       const result = await getPorts(folder.uri.fsPath);
       if (result.ok) {
         const key = `${result.data.project}/${result.data.instance}`;
+        // Deduplicate — multiple workspace folders may resolve to the same project
+        if (seen.has(key)) continue;
+        seen.add(key);
         this.projectData.set(key, result.data);
         items.push(new ProjectItem(result.data.project, result.data.instance));
         this.onDataLoaded?.(result);
       } else if (result.error.kind === 'not-found') {
         return [new MessageItem('Outport CLI not found — install from outport.dev', 'warning')];
       } else if (result.error.kind === 'not-registered') {
-        items.push(new MessageItem(`${folder.name}: run "outport up" to allocate ports`, 'info'));
+        // Only show once per workspace, not per folder
+        if (!seen.has('not-registered')) {
+          seen.add('not-registered');
+          items.push(new MessageItem('Run "outport up" to allocate ports', 'info'));
+        }
       } else {
         this.outputChannel.appendLine(`[error] ${folder.name}: ${result.error.message}`);
         items.push(new MessageItem(`${folder.name}: ${result.error.message}`, 'error'));
