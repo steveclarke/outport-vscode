@@ -12,7 +12,7 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "icon": "brand/mark-color-128.png",
+  "icon": "brand/mark-color-256.png",
   "categories": ["Other"],
   "activationEvents": [
     "workspaceContains:.outport.yml",

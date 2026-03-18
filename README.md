@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://outport.app">
-    <img src="brand/logo-horizontal-color.svg" width="280" alt="Outport">
+    <img src="brand/logo-horizontal-color-600.png" width="280" alt="Outport">
   </a>
 </p>
 
