@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Outport Configuration",
+  "description": "Configuration file for Outport port manager (.outport.yml)",
+  "type": "object",
+  "required": ["name", "services"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Project name. Used to generate port hashes and hostnames. Must be lowercase alphanumeric with hyphens.",
+      "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?$"
+    },
+    "services": {
+      "type": "object",
+      "description": "Services that need port allocations.",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/definitions/service"
+      }
+    },
+    "computed": {
+      "type": "object",
+      "description": "Computed values derived from service ports and hostnames. Written to .env files alongside service ports.",
+      "additionalProperties": {
+        "$ref": "#/definitions/computedValue"
+      }
+    }
+  },
+  "definitions": {
+    "service": {
+      "type": "object",
+      "required": ["env_var"],
+      "additionalProperties": false,
+      "properties": {
+        "env_var": {
+          "type": "string",
+          "description": "Environment variable name for this service's port (e.g., PORT, DB_PORT)."
+        },
+        "preferred_port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Preferred port number. Used if available, otherwise falls back to hash-based allocation."
+        },
+        "protocol": {
+          "type": "string",
+          "enum": ["http", "https"],
+          "description": "Protocol for .test hostname. Required when hostname is set. Enables browser access via outport open."
+        },
+        "hostname": {
+          "type": "string",
+          "description": "Hostname for .test domain (e.g., myapp.test, api.myapp.test). Must contain the project name. The .test suffix is optional in config but conventional.",
+          "pattern": "^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(\\..+)?$"
+        },
+        "env_file": {
+          "description": "Which .env file(s) to write this port to. Defaults to .env.",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ]
+        }
+      }
+    },
+    "computedValue": {
+      "type": "object",
+      "required": ["env_file"],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "Template string using ${service.field} syntax. Fields: port, hostname, url. Modifiers: url:direct. Standalone vars: ${instance}. Conditionals: ${var:-default}, ${var:+replacement}."
+        },
+        "env_file": {
+          "description": "Where to write the computed value. Can be a string, array of strings, or array of objects with file and value for per-file overrides.",
+          "oneOf": [
+            { "type": "string" },
+            {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  { "type": "string" },
+                  {
+                    "type": "object",
+                    "required": ["file"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "file": {
+                        "type": "string",
+                        "description": "Path to the .env file."
+                      },
+                      "value": {
+                        "type": "string",
+                        "description": "Override template for this specific file."
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
