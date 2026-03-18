@@ -65,7 +65,11 @@ export async function getPorts(cwd: string): Promise<CliResult<PortsOutput>> {
   const result = await runOutport(['ports', '--json', '--check', '--computed'], cwd);
   if (!result.ok) return result;
   try {
-    const data = JSON.parse(result.data) as PortsOutput;
+    const trimmed = result.data.trim();
+    if (!trimmed.startsWith('{')) {
+      return { ok: false, error: { kind: 'not-registered', message: trimmed } };
+    }
+    const data = JSON.parse(trimmed) as PortsOutput;
     return { ok: true, data };
   } catch {
     return { ok: false, error: { kind: 'cli-error', message: 'Failed to parse outport JSON output' } };

@@ -68,8 +68,11 @@ export function activate(context: vscode.ExtensionContext): void {
       refresh();
     }),
 
-    vscode.commands.registerCommand('outport.openService', (url: string) => {
-      vscode.env.openExternal(vscode.Uri.parse(url));
+    vscode.commands.registerCommand('outport.openService', (urlOrItem: string | any) => {
+      const url = typeof urlOrItem === 'string' ? urlOrItem : urlOrItem?.service?.url;
+      if (url) {
+        vscode.env.openExternal(vscode.Uri.parse(url));
+      }
     }),
 
     vscode.commands.registerCommand('outport.copyPort', (item: any) => {

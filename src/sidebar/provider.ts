@@ -8,7 +8,7 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
   private _onDidChangeTreeData = new vscode.EventEmitter<OutportTreeItem | undefined | void>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-  private data: CliResult<PortsOutput> | null = null;
+  private projectData: Map<string, PortsOutput> = new Map();
   private outputChannel: vscode.OutputChannel;
   private onDataLoaded?: (result: CliResult<PortsOutput>) => void;
 
@@ -17,12 +17,8 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
     this.onDataLoaded = onDataLoaded;
   }
 
-  getLastResult(): CliResult<PortsOutput> | null {
-    return this.data;
-  }
-
   refresh(): void {
-    this.data = null;
+    this.projectData.clear();
     this._onDidChangeTreeData.fire();
   }
 
@@ -34,11 +30,14 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
     if (!element) {
       return this.getTopLevel();
     }
-    if (element instanceof ProjectItem && this.data?.ok) {
-      return this.getProjectChildren(this.data.data);
+    if (element instanceof ProjectItem) {
+      const key = `${element.projectName}/${element.instance}`;
+      const data = this.projectData.get(key);
+      if (data) return this.getProjectChildren(key, data);
     }
-    if (element instanceof ComputedHeaderItem && this.data?.ok) {
-      return this.getComputedChildren(this.data.data);
+    if (element instanceof ComputedHeaderItem) {
+      const data = this.projectData.get(element.projectKey);
+      if (data) return this.getComputedChildren(data);
     }
     return [];
   }
@@ -53,8 +52,9 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
     for (const folder of folders) {
       const result = await getPorts(folder.uri.fsPath);
       if (result.ok) {
+        const key = `${result.data.project}/${result.data.instance}`;
+        this.projectData.set(key, result.data);
         items.push(new ProjectItem(result.data.project, result.data.instance));
-        this.data = result;
         this.onDataLoaded?.(result);
       } else if (result.error.kind === 'not-found') {
         return [new MessageItem('Outport CLI not found — install from outport.dev', 'warning')];
@@ -73,13 +73,13 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
     return items;
   }
 
-  private getProjectChildren(data: PortsOutput): OutportTreeItem[] {
+  private getProjectChildren(projectKey: string, data: PortsOutput): OutportTreeItem[] {
     const items: OutportTreeItem[] = [];
     for (const [name, service] of Object.entries(data.services)) {
       items.push(new ServiceItem(name, service));
     }
     if (data.computed && Object.keys(data.computed).length > 0) {
-      items.push(new ComputedHeaderItem());
+      items.push(new ComputedHeaderItem(projectKey));
     }
     return items;
   }

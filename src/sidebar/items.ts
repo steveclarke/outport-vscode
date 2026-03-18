@@ -54,7 +54,7 @@ export class ServiceItem extends vscode.TreeItem {
 }
 
 export class ComputedHeaderItem extends vscode.TreeItem {
-  constructor() {
+  constructor(public readonly projectKey: string) {
     super('Computed', vscode.TreeItemCollapsibleState.Collapsed);
     this.contextValue = 'computedHeader';
     this.iconPath = new vscode.ThemeIcon('symbol-variable');
