@@ -11,15 +11,35 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
   private projectData: Map<string, PortsOutput> = new Map();
   private outputChannel: vscode.OutputChannel;
   private onDataLoaded?: (result: CliResult<PortsOutput>) => void;
+  private healthPollTimer?: ReturnType<typeof setInterval>;
+  private static readonly POLL_INTERVAL_MS = 5_000;
 
   constructor(outputChannel: vscode.OutputChannel, onDataLoaded?: (result: CliResult<PortsOutput>) => void) {
     this.outputChannel = outputChannel;
     this.onDataLoaded = onDataLoaded;
   }
 
+  dispose(): void {
+    this.stopHealthPolling();
+  }
+
   refresh(): void {
     this.projectData.clear();
     this._onDidChangeTreeData.fire();
+  }
+
+  private startHealthPolling(): void {
+    if (this.healthPollTimer) return;
+    this.healthPollTimer = setInterval(() => {
+      this.refresh();
+    }, OutportTreeProvider.POLL_INTERVAL_MS);
+  }
+
+  private stopHealthPolling(): void {
+    if (this.healthPollTimer) {
+      clearInterval(this.healthPollTimer);
+      this.healthPollTimer = undefined;
+    }
   }
 
   getTreeItem(element: OutportTreeItem): vscode.TreeItem {
@@ -76,6 +96,16 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
 
     if (items.length === 0) {
       return [new MessageItem('No .outport.yml found', 'info')];
+    }
+
+    // If any service is not listening, poll until they all come up
+    const anyDown = [...this.projectData.values()].some((data) =>
+      Object.values(data.services).some((svc) => svc.up === false),
+    );
+    if (anyDown) {
+      this.startHealthPolling();
+    } else {
+      this.stopHealthPolling();
     }
 
     return items;

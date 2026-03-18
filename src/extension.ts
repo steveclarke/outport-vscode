@@ -22,6 +22,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const watcher = createRegistryWatcher(() => refresh());
   context.subscriptions.push(watcher);
+  context.subscriptions.push({ dispose: () => treeProvider.dispose() });
 
   context.subscriptions.push(
     vscode.commands.registerCommand('outport.refresh', () => refresh()),
