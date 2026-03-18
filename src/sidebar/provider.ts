@@ -12,7 +12,9 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
   private outputChannel: vscode.OutputChannel;
   private onDataLoaded?: (result: CliResult<PortsOutput>) => void;
   private healthPollTimer?: ReturnType<typeof setInterval>;
-  private static readonly POLL_INTERVAL_MS = 5_000;
+  private currentPollInterval?: number;
+  private static readonly FAST_POLL_MS = 5_000;
+  private static readonly SLOW_POLL_MS = 30_000;
 
   constructor(outputChannel: vscode.OutputChannel, onDataLoaded?: (result: CliResult<PortsOutput>) => void) {
     this.outputChannel = outputChannel;
@@ -20,7 +22,10 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
   }
 
   dispose(): void {
-    this.stopHealthPolling();
+    if (this.healthPollTimer) {
+      clearInterval(this.healthPollTimer);
+      this.healthPollTimer = undefined;
+    }
   }
 
   refresh(): void {
@@ -28,18 +33,14 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
     this._onDidChangeTreeData.fire();
   }
 
-  private startHealthPolling(): void {
-    if (this.healthPollTimer) return;
+  private setPollInterval(intervalMs: number): void {
+    // Only restart if the interval actually changed
+    if (this.currentPollInterval === intervalMs) return;
+    if (this.healthPollTimer) clearInterval(this.healthPollTimer);
+    this.currentPollInterval = intervalMs;
     this.healthPollTimer = setInterval(() => {
       this.refresh();
-    }, OutportTreeProvider.POLL_INTERVAL_MS);
-  }
-
-  private stopHealthPolling(): void {
-    if (this.healthPollTimer) {
-      clearInterval(this.healthPollTimer);
-      this.healthPollTimer = undefined;
-    }
+    }, intervalMs);
   }
 
   getTreeItem(element: OutportTreeItem): vscode.TreeItem {
@@ -98,15 +99,14 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
       return [new MessageItem('No .outport.yml found', 'info')];
     }
 
-    // If any service is not listening, poll until they all come up
+    // Fast poll (5s) when services are down, slow poll (30s) when all healthy
     const anyDown = [...this.projectData.values()].some((data) =>
       Object.values(data.services).some((svc) => svc.up === false),
     );
-    if (anyDown) {
-      this.startHealthPolling();
-    } else {
-      this.stopHealthPolling();
-    }
+    this.setPollInterval(anyDown
+      ? OutportTreeProvider.FAST_POLL_MS
+      : OutportTreeProvider.SLOW_POLL_MS,
+    );
 
     return items;
   }
