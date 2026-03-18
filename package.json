@@ -1,0 +1,90 @@
+{
+  "name": "outport",
+  "displayName": "Outport",
+  "description": "Port management for multi-project development — see your ports, URLs, and service health right in VS Code",
+  "version": "0.1.0",
+  "publisher": "steveclarke",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/steveclarke/outport-vscode"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "workspaceContains:.outport.yml",
+    "workspaceContains:.outport.yaml"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "outportView",
+          "name": "Outport",
+          "when": "outport.active",
+          "contextualTitle": "Outport"
+        }
+      ]
+    },
+    "commands": [
+      { "command": "outport.refresh", "title": "Refresh", "category": "Outport", "icon": "$(refresh)" },
+      { "command": "outport.up", "title": "Run Up", "category": "Outport", "icon": "$(play)" },
+      { "command": "outport.upForce", "title": "Run Up --force", "category": "Outport" },
+      { "command": "outport.down", "title": "Run Down", "category": "Outport", "icon": "$(debug-stop)" },
+      { "command": "outport.openService", "title": "Open in Browser", "category": "Outport", "icon": "$(link-external)" },
+      { "command": "outport.copyPort", "title": "Copy Port", "category": "Outport" },
+      { "command": "outport.copyUrl", "title": "Copy URL", "category": "Outport" },
+      { "command": "outport.copyEnvVar", "title": "Copy Env Var Assignment", "category": "Outport" }
+    ],
+    "menus": {
+      "view/title": [
+        { "command": "outport.refresh", "when": "view == outportView", "group": "navigation" },
+        { "command": "outport.up", "when": "view == outportView", "group": "navigation" },
+        { "command": "outport.down", "when": "view == outportView" },
+        { "command": "outport.upForce", "when": "view == outportView" }
+      ],
+      "view/item/context": [
+        { "command": "outport.openService", "when": "view == outportView && viewItem == httpService", "group": "inline" },
+        { "command": "outport.copyPort", "when": "view == outportView && viewItem =~ /^(service|httpService)$/" },
+        { "command": "outport.copyUrl", "when": "view == outportView && viewItem == httpService" },
+        { "command": "outport.copyEnvVar", "when": "view == outportView && viewItem =~ /^(service|httpService)$/" }
+      ]
+    },
+    "configuration": {
+      "title": "Outport",
+      "properties": {
+        "outport.binaryPath": {
+          "type": "string",
+          "default": "outport",
+          "description": "Path to the outport binary. Use an absolute path if outport is not on your PATH."
+        }
+      }
+    },
+    "yamlValidation": [
+      { "fileMatch": ".outport.yml", "url": "./schemas/outport.schema.json" },
+      { "fileMatch": ".outport.yaml", "url": "./schemas/outport.schema.json" }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "build": "node esbuild.js",
+    "lint": "eslint src/",
+    "test": "vscode-test",
+    "test:unit": "vscode-test --label unitTests",
+    "vscode:prepublish": "npm run build"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^22",
+    "@types/mocha": "^10",
+    "typescript": "^5.8",
+    "mocha": "^10",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4",
+    "esbuild": "^0.24"
+  }
+}
