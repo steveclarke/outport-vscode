@@ -14,11 +14,17 @@ export function activate(context: vscode.ExtensionContext): void {
   const treeProvider = new OutportTreeProvider(outputChannel, (result) => {
     updateStatusBar(result);
   });
-  vscode.window.registerTreeDataProvider('outportView', treeProvider);
+  const treeView = vscode.window.createTreeView('outportView', { treeDataProvider: treeProvider });
+  context.subscriptions.push(treeView);
 
   const refresh = () => {
     treeProvider.refresh();
   };
+
+  // Refresh immediately when the panel becomes visible (user clicks the icon)
+  treeView.onDidChangeVisibility((e) => {
+    if (e.visible) refresh();
+  });
 
   const watcher = createRegistryWatcher(() => refresh());
   context.subscriptions.push(watcher);
