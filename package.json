@@ -19,13 +19,21 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "outport-sidebar",
+          "title": "Outport",
+          "icon": "resources/outport.svg"
+        }
+      ]
+    },
     "views": {
-      "explorer": [
+      "outport-sidebar": [
         {
           "id": "outportView",
-          "name": "Outport",
-          "when": "outport.active",
-          "contextualTitle": "Outport"
+          "name": "Ports",
+          "when": "outport.active"
         }
       ]
     },
