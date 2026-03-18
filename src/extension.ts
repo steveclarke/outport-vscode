@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { runUp, runDown } from './cli';
+import { getPorts, runUp, runDown } from './cli';
 import { OutportTreeProvider } from './sidebar/provider';
 import { createStatusBar, updateStatusBar } from './statusbar';
 import { createRegistryWatcher } from './watcher';
@@ -94,7 +94,13 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
   );
 
-  refresh();
+  // Populate the status bar immediately on activation, without waiting
+  // for the user to open the sidebar panel
+  const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (cwd) {
+    getPorts(cwd).then((result) => updateStatusBar(result));
+  }
+
   outputChannel.appendLine('Outport extension activated');
 }
 
