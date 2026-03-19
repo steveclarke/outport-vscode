@@ -57,17 +57,21 @@ class OutportCompletionProvider implements vscode.CompletionItemProvider {
     if (!config?.services) return undefined;
 
     const serviceNames = Object.keys(config.services);
-    const { inner } = ctx;
+    const { inner, openIdx } = ctx;
+    const line = position.line;
 
     // After "${service.field:" — suggest modifiers
     const modMatch = inner.match(/^(\w+)\.(\w+):(\w*)$/);
     if (modMatch) {
-      const [, , field] = modMatch;
+      const [, svcName, field, partial] = modMatch;
+      const colonIdx = openIdx + 2 + svcName.length + 1 + field.length + 1;
+      const replaceRange = new vscode.Range(line, colonIdx, line, colonIdx + partial.length);
       const mods = MODIFIERS[field];
       if (!mods) return [];
       return mods.map(m => {
         const item = new vscode.CompletionItem(m, vscode.CompletionItemKind.Value);
         item.detail = `${field}:${m}`;
+        item.range = replaceRange;
         return item;
       });
     }
@@ -75,11 +79,14 @@ class OutportCompletionProvider implements vscode.CompletionItemProvider {
     // After "${service." — suggest fields
     const fieldMatch = inner.match(/^(\w+)\.(\w*)$/);
     if (fieldMatch) {
-      const [, svcName] = fieldMatch;
+      const [, svcName, partial] = fieldMatch;
       if (!config.services[svcName]) return [];
+      const dotIdx = openIdx + 2 + svcName.length + 1;
+      const replaceRange = new vscode.Range(line, dotIdx, line, dotIdx + partial.length);
       return FIELDS.map(f => {
         const item = new vscode.CompletionItem(f, vscode.CompletionItemKind.Field);
         item.detail = `\${${svcName}.${f}}`;
+        item.range = replaceRange;
         return item;
       });
     }
@@ -87,16 +94,21 @@ class OutportCompletionProvider implements vscode.CompletionItemProvider {
     // After "${" — suggest service names and standalone vars
     const prefixMatch = inner.match(/^(\w*)$/);
     if (prefixMatch) {
+      const [, partial] = prefixMatch;
+      const startIdx = openIdx + 2;
+      const replaceRange = new vscode.Range(line, startIdx, line, startIdx + partial.length);
       const items: vscode.CompletionItem[] = [];
       for (const name of serviceNames) {
         const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Module);
         item.detail = 'service';
+        item.range = replaceRange;
         item.command = { command: 'editor.action.triggerSuggest', title: '' };
         items.push(item);
       }
       for (const v of STANDALONE_VARS) {
         const item = new vscode.CompletionItem(v, vscode.CompletionItemKind.Variable);
         item.detail = 'standalone variable';
+        item.range = replaceRange;
         items.push(item);
       }
       return items;
