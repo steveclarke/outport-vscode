@@ -120,11 +120,13 @@
         },
         {
           "command": "outport.share",
-          "when": "view == outportView && !outport.sharing"
+          "when": "view == outportView && !outport.sharing",
+          "group": "navigation"
         },
         {
           "command": "outport.stopShare",
-          "when": "view == outportView && outport.sharing"
+          "when": "view == outportView && outport.sharing",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
