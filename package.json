@@ -13,7 +13,9 @@
     "vscode": "^1.85.0"
   },
   "icon": "brand/mark-color-256.png",
-  "categories": ["Other"],
+  "categories": [
+    "Other"
+  ],
   "activationEvents": [
     "workspaceContains:.outport.yml",
     "workspaceContains:.outport.yaml"
@@ -39,27 +41,90 @@
       ]
     },
     "commands": [
-      { "command": "outport.refresh", "title": "Refresh", "category": "Outport", "icon": "$(refresh)" },
-      { "command": "outport.up", "title": "Run Up", "category": "Outport", "icon": "$(play)" },
-      { "command": "outport.upForce", "title": "Run Up --force", "category": "Outport" },
-      { "command": "outport.down", "title": "Run Down", "category": "Outport", "icon": "$(debug-stop)" },
-      { "command": "outport.openService", "title": "Open in Browser", "category": "Outport", "icon": "$(link-external)" },
-      { "command": "outport.copyPort", "title": "Copy Port", "category": "Outport" },
-      { "command": "outport.copyUrl", "title": "Copy URL", "category": "Outport" },
-      { "command": "outport.copyEnvVar", "title": "Copy Env Var Assignment", "category": "Outport" }
+      {
+        "command": "outport.refresh",
+        "title": "Refresh",
+        "category": "Outport",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "outport.up",
+        "title": "Run Up",
+        "category": "Outport",
+        "icon": "$(play)"
+      },
+      {
+        "command": "outport.upForce",
+        "title": "Run Up --force",
+        "category": "Outport"
+      },
+      {
+        "command": "outport.down",
+        "title": "Run Down",
+        "category": "Outport",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "outport.openService",
+        "title": "Open in Browser",
+        "category": "Outport",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "outport.copyPort",
+        "title": "Copy Port",
+        "category": "Outport"
+      },
+      {
+        "command": "outport.copyUrl",
+        "title": "Copy URL",
+        "category": "Outport"
+      },
+      {
+        "command": "outport.copyEnvVar",
+        "title": "Copy Env Var Assignment",
+        "category": "Outport"
+      }
     ],
     "menus": {
       "view/title": [
-        { "command": "outport.refresh", "when": "view == outportView", "group": "navigation" },
-        { "command": "outport.up", "when": "view == outportView", "group": "navigation" },
-        { "command": "outport.down", "when": "view == outportView" },
-        { "command": "outport.upForce", "when": "view == outportView" }
+        {
+          "command": "outport.refresh",
+          "when": "view == outportView",
+          "group": "navigation"
+        },
+        {
+          "command": "outport.up",
+          "when": "view == outportView",
+          "group": "navigation"
+        },
+        {
+          "command": "outport.down",
+          "when": "view == outportView"
+        },
+        {
+          "command": "outport.upForce",
+          "when": "view == outportView"
+        }
       ],
       "view/item/context": [
-        { "command": "outport.openService", "when": "view == outportView && viewItem == httpService", "group": "inline" },
-        { "command": "outport.copyPort", "when": "view == outportView && viewItem =~ /^(service|httpService)$/" },
-        { "command": "outport.copyUrl", "when": "view == outportView && viewItem == httpService" },
-        { "command": "outport.copyEnvVar", "when": "view == outportView && viewItem =~ /^(service|httpService)$/" }
+        {
+          "command": "outport.openService",
+          "when": "view == outportView && viewItem == httpService",
+          "group": "inline"
+        },
+        {
+          "command": "outport.copyPort",
+          "when": "view == outportView && viewItem =~ /^(service|httpService)$/"
+        },
+        {
+          "command": "outport.copyUrl",
+          "when": "view == outportView && viewItem == httpService"
+        },
+        {
+          "command": "outport.copyEnvVar",
+          "when": "view == outportView && viewItem =~ /^(service|httpService)$/"
+        }
       ]
     },
     "configuration": {
@@ -73,8 +138,14 @@
       }
     },
     "yamlValidation": [
-      { "fileMatch": ".outport.yml", "url": "./schemas/outport.schema.json" },
-      { "fileMatch": ".outport.yaml", "url": "./schemas/outport.schema.json" }
+      {
+        "fileMatch": ".outport.yml",
+        "url": "./schemas/outport.schema.json"
+      },
+      {
+        "fileMatch": ".outport.yaml",
+        "url": "./schemas/outport.schema.json"
+      }
     ]
   },
   "scripts": {
@@ -87,13 +158,17 @@
     "vscode:prepublish": "npm run build"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
-    "@types/node": "^22",
+    "@types/js-yaml": "^4.0.9",
     "@types/mocha": "^10",
-    "typescript": "^5.8",
-    "mocha": "^10",
+    "@types/node": "^22",
+    "@types/vscode": "^1.85.0",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4",
-    "esbuild": "^0.24"
+    "esbuild": "^0.24",
+    "mocha": "^10",
+    "typescript": "^5.8"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.1"
   }
 }
