@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ServiceJSON, ComputedJSON } from '../cli';
+import { ServiceJSON, ComputedJSON, DoctorCheck } from '../cli';
 
 export class ProjectItem extends vscode.TreeItem {
   constructor(
@@ -73,6 +73,29 @@ export class ComputedItem extends vscode.TreeItem {
       : `${name} = ${displayValue}`;
     this.contextValue = 'computed';
     this.iconPath = new vscode.ThemeIcon('symbol-constant');
+  }
+}
+
+export class DoctorHeaderItem extends vscode.TreeItem {
+  constructor() {
+    super('System Health', vscode.TreeItemCollapsibleState.Expanded);
+    this.contextValue = 'doctorHeader';
+    this.iconPath = new vscode.ThemeIcon('warning', new vscode.ThemeColor('problemsWarningIcon.foreground'));
+  }
+}
+
+export class DoctorCheckItem extends vscode.TreeItem {
+  constructor(check: DoctorCheck) {
+    super(check.name, vscode.TreeItemCollapsibleState.None);
+    this.description = check.message;
+    this.tooltip = `[${check.category}] ${check.name}: ${check.message}`;
+    this.contextValue = 'doctorCheck';
+
+    if (check.status === 'fail') {
+      this.iconPath = new vscode.ThemeIcon('error', new vscode.ThemeColor('testing.iconFailed'));
+    } else {
+      this.iconPath = new vscode.ThemeIcon('warning', new vscode.ThemeColor('problemsWarningIcon.foreground'));
+    }
   }
 }
 

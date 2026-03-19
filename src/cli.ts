@@ -85,3 +85,26 @@ export async function runUp(cwd: string, force: boolean): Promise<CliResult<stri
 export async function runDown(cwd: string): Promise<CliResult<string>> {
   return runOutport(['down'], cwd);
 }
+
+export interface DoctorCheck {
+  name: string;
+  category: string;
+  status: 'pass' | 'warn' | 'fail';
+  message: string;
+}
+
+export interface DoctorOutput {
+  results: DoctorCheck[];
+  passed: boolean;
+}
+
+export async function runDoctor(cwd: string): Promise<CliResult<DoctorOutput>> {
+  const result = await runOutport(['doctor', '--json'], cwd);
+  if (!result.ok) return result;
+  try {
+    const data = JSON.parse(result.data.trim()) as DoctorOutput;
+    return { ok: true, data };
+  } catch {
+    return { ok: false, error: { kind: 'cli-error', message: 'Failed to parse doctor JSON output' } };
+  }
+}

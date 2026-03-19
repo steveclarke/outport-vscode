@@ -1,14 +1,15 @@
 import * as vscode from 'vscode';
-import { getPorts, CliResult, PortsOutput } from '../cli';
-import { ProjectItem, ServiceItem, ComputedHeaderItem, ComputedItem, MessageItem } from './items';
+import { getPorts, runDoctor, CliResult, PortsOutput, DoctorCheck } from '../cli';
+import { ProjectItem, ServiceItem, ComputedHeaderItem, ComputedItem, DoctorHeaderItem, DoctorCheckItem, MessageItem } from './items';
 
-type OutportTreeItem = ProjectItem | ServiceItem | ComputedHeaderItem | ComputedItem | MessageItem;
+type OutportTreeItem = ProjectItem | ServiceItem | ComputedHeaderItem | ComputedItem | DoctorHeaderItem | DoctorCheckItem | MessageItem;
 
 export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeItem> {
   private _onDidChangeTreeData = new vscode.EventEmitter<OutportTreeItem | undefined | void>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
   private projectData: Map<string, PortsOutput> = new Map();
+  private doctorIssues: DoctorCheck[] = [];
   private outputChannel: vscode.OutputChannel;
   private onDataLoaded?: (result: CliResult<PortsOutput>) => void;
   private healthPollTimer?: ReturnType<typeof setInterval>;
@@ -60,6 +61,9 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
       const data = this.projectData.get(element.projectKey);
       if (data) return this.getComputedChildren(data);
     }
+    if (element instanceof DoctorHeaderItem) {
+      return this.doctorIssues.map(check => new DoctorCheckItem(check));
+    }
     return [];
   }
 
@@ -107,6 +111,18 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
       ? OutportTreeProvider.FAST_POLL_MS
       : OutportTreeProvider.SLOW_POLL_MS,
     );
+
+    // Run doctor and show issues if any
+    const firstFolder = folders[0].uri.fsPath;
+    const doctorResult = await runDoctor(firstFolder);
+    if (doctorResult.ok) {
+      this.doctorIssues = doctorResult.data.results.filter(
+        r => r.status === 'warn' || r.status === 'fail'
+      );
+      if (this.doctorIssues.length > 0) {
+        items.push(new DoctorHeaderItem());
+      }
+    }
 
     return items;
   }

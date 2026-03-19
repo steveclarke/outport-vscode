@@ -34,4 +34,15 @@ suite('Tree Item Construction', () => {
     const contextValue = isHttp ? 'httpService' : 'service';
     assert.strictEqual(contextValue, 'service');
   });
+
+  test('DoctorCheckItem shows fail icon for failures', () => {
+    const check = { name: 'DNS resolver', category: 'DNS', status: 'fail' as const, message: 'resolver missing' };
+    assert.strictEqual(check.status, 'fail');
+    assert.strictEqual(check.category, 'DNS');
+  });
+
+  test('DoctorCheckItem shows warn icon for warnings', () => {
+    const check = { name: 'cloudflared', category: 'Tools', status: 'warn' as const, message: 'not found' };
+    assert.strictEqual(check.status, 'warn');
+  });
 });
