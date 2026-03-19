@@ -174,7 +174,9 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "build": "node esbuild.js",
-    "lint": "eslint src/",
+    "lint": "oxlint src/",
+    "format": "oxfmt src/",
+    "format:check": "oxfmt --check src/",
     "test": "vscode-test",
     "test:unit": "vscode-test --label unitTests",
     "vscode:prepublish": "npm run build"
@@ -188,6 +190,8 @@
     "@vscode/test-electron": "^2.4",
     "esbuild": "^0.24",
     "mocha": "^10",
+    "oxfmt": "^0.41.0",
+    "oxlint": "^1.56.0",
     "typescript": "^5.8"
   },
   "dependencies": {

@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["out/**", ".vscode-test/**"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "no-unused-vars": ["error", { "args": "after-used" }],
+    "no-console": "warn"
+  },
+  "env": {
+    "node": true,
+    "es2024": true
+  }
+}
