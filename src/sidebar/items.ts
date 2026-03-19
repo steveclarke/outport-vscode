@@ -88,7 +88,9 @@ export class DoctorCheckItem extends vscode.TreeItem {
   constructor(check: DoctorCheck) {
     super(check.name, vscode.TreeItemCollapsibleState.None);
     this.description = check.message;
-    this.tooltip = `[${check.category}] ${check.name}: ${check.message}`;
+    this.tooltip = check.fix
+      ? `[${check.category}] ${check.name}: ${check.message}\n→ ${check.fix}`
+      : `[${check.category}] ${check.name}: ${check.message}`;
     this.contextValue = 'doctorCheck';
 
     if (check.status === 'fail') {

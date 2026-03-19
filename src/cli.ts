@@ -91,6 +91,7 @@ export interface DoctorCheck {
   category: string;
   status: 'pass' | 'warn' | 'fail';
   message: string;
+  fix?: string;
 }
 
 export interface DoctorOutput {
@@ -99,12 +100,22 @@ export interface DoctorOutput {
 }
 
 export async function runDoctor(cwd: string): Promise<CliResult<DoctorOutput>> {
-  const result = await runOutport(['doctor', '--json'], cwd);
-  if (!result.ok) return result;
+  const bin = getBinaryPath();
   try {
-    const data = JSON.parse(result.data.trim()) as DoctorOutput;
+    const { stdout } = await execFileAsync(bin, ['doctor', '--json'], { cwd, timeout: 15_000 });
+    const data = JSON.parse(stdout.trim()) as DoctorOutput;
     return { ok: true, data };
-  } catch {
-    return { ok: false, error: { kind: 'cli-error', message: 'Failed to parse doctor JSON output' } };
+  } catch (err: any) {
+    // doctor exits non-zero when checks fail, but stdout still has the JSON
+    if (err.stdout) {
+      try {
+        const data = JSON.parse(err.stdout.trim()) as DoctorOutput;
+        return { ok: true, data };
+      } catch { /* fall through */ }
+    }
+    if (err.code === 'ENOENT') {
+      return { ok: false, error: { kind: 'not-found', message: `outport binary not found at "${bin}"` } };
+    }
+    return { ok: false, error: { kind: 'cli-error', message: err.stderr?.trim() || err.message } };
   }
 }
