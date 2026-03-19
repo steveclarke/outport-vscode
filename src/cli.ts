@@ -122,6 +122,7 @@ export function startShare(
   onTunnels: (tunnels: TunnelInfo[]) => void,
   onExit: () => void,
   onError: (message: string) => void,
+  onStderr?: (message: string) => void,
 ): void {
   if (shareProcess) {
     onError('Already sharing');
@@ -139,6 +140,7 @@ export function startShare(
     // Try to parse — JSON is complete when we can parse it
     try {
       const data = JSON.parse(stdout.trim()) as ShareOutput;
+      stdout = ''; // Clear buffer after successful parse
       if (data.tunnels) {
         onTunnels(data.tunnels);
       }
@@ -149,17 +151,21 @@ export function startShare(
 
   proc.stderr?.on('data', (chunk: Buffer) => {
     const msg = chunk.toString().trim();
-    if (msg) onError(msg);
+    if (msg) onStderr?.(msg);
   });
 
   proc.on('error', (err) => {
-    shareProcess = undefined;
+    // Don't call onExit here — 'close' always fires after 'error'
     onError(err.message);
-    onExit();
   });
 
   proc.on('close', () => {
-    shareProcess = undefined;
+    // Only clean up if this is still the active share process.
+    // Prevents a stale close event from corrupting a new session
+    // started between stopShare() and the old process exiting.
+    if (shareProcess === proc) {
+      shareProcess = undefined;
+    }
     onExit();
   });
 }
@@ -167,7 +173,9 @@ export function startShare(
 export function stopShare(): void {
   if (shareProcess) {
     shareProcess.kill('SIGTERM');
-    shareProcess = undefined;
+    // Don't null shareProcess here — let the 'close' handler do it.
+    // This prevents a race where startShare() is called before the
+    // old process emits 'close'.
   }
 }
 

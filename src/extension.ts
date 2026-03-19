@@ -1,17 +1,37 @@
 import * as vscode from 'vscode';
-import { getPorts, runUp, runDown, startShare, stopShare, isSharing } from './cli';
+import { CliResult, getPorts, runUp, runDown, startShare, stopShare, isSharing } from './cli';
 import { OutportTreeProvider } from './sidebar/provider';
+import { ServiceItem } from './sidebar/items';
 import { createStatusBar, updateStatusBar } from './statusbar';
 import { registerDiagnostics } from './diagnostics';
 import { registerTemplateIntelligence } from './template';
 import { createRegistryWatcher } from './watcher';
+
+async function runCliCommand(
+  label: string,
+  cliFn: (cwd: string) => Promise<CliResult<string>>,
+  outputChannel: vscode.OutputChannel,
+  refresh: () => void,
+): Promise<void> {
+  const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!cwd) return;
+  outputChannel.appendLine(`> ${label}`);
+  outputChannel.show(true);
+  const result = await cliFn(cwd);
+  if (result.ok) {
+    outputChannel.appendLine(result.data);
+  } else {
+    outputChannel.appendLine(`Error: ${result.error.message}`);
+  }
+  refresh();
+}
 
 export function activate(context: vscode.ExtensionContext): void {
   const outputChannel = vscode.window.createOutputChannel('Outport');
 
   vscode.commands.executeCommand('setContext', 'outport.active', true);
 
-  const statusBar = createStatusBar(context);
+  createStatusBar(context);
 
   registerDiagnostics(context);
   registerTemplateIntelligence(context);
@@ -38,68 +58,35 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand('outport.refresh', () => refresh()),
 
-    vscode.commands.registerCommand('outport.up', async () => {
-      const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-      if (!cwd) return;
-      outputChannel.appendLine('> outport up');
-      outputChannel.show(true);
-      const result = await runUp(cwd, false);
-      if (result.ok) {
-        outputChannel.appendLine(result.data);
-      } else {
-        outputChannel.appendLine(`Error: ${result.error.message}`);
-      }
-      refresh();
-    }),
+    vscode.commands.registerCommand('outport.up', () =>
+      runCliCommand('outport up', (cwd) => runUp(cwd, false), outputChannel, refresh)),
 
-    vscode.commands.registerCommand('outport.upForce', async () => {
-      const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-      if (!cwd) return;
-      outputChannel.appendLine('> outport up --force');
-      outputChannel.show(true);
-      const result = await runUp(cwd, true);
-      if (result.ok) {
-        outputChannel.appendLine(result.data);
-      } else {
-        outputChannel.appendLine(`Error: ${result.error.message}`);
-      }
-      refresh();
-    }),
+    vscode.commands.registerCommand('outport.upForce', () =>
+      runCliCommand('outport up --force', (cwd) => runUp(cwd, true), outputChannel, refresh)),
 
-    vscode.commands.registerCommand('outport.down', async () => {
-      const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-      if (!cwd) return;
-      outputChannel.appendLine('> outport down');
-      outputChannel.show(true);
-      const result = await runDown(cwd);
-      if (result.ok) {
-        outputChannel.appendLine(result.data);
-      } else {
-        outputChannel.appendLine(`Error: ${result.error.message}`);
-      }
-      refresh();
-    }),
+    vscode.commands.registerCommand('outport.down', () =>
+      runCliCommand('outport down', runDown, outputChannel, refresh)),
 
-    vscode.commands.registerCommand('outport.openService', (urlOrItem: string | any) => {
+    vscode.commands.registerCommand('outport.openService', (urlOrItem: string | ServiceItem) => {
       const url = typeof urlOrItem === 'string' ? urlOrItem : urlOrItem?.service?.url;
       if (url) {
         vscode.env.openExternal(vscode.Uri.parse(url));
       }
     }),
 
-    vscode.commands.registerCommand('outport.copyPort', (item: any) => {
+    vscode.commands.registerCommand('outport.copyPort', (item: ServiceItem) => {
       if (item?.service?.port) {
         vscode.env.clipboard.writeText(String(item.service.port));
       }
     }),
 
-    vscode.commands.registerCommand('outport.copyUrl', (item: any) => {
+    vscode.commands.registerCommand('outport.copyUrl', (item: ServiceItem) => {
       if (item?.service?.url) {
         vscode.env.clipboard.writeText(item.service.url);
       }
     }),
 
-    vscode.commands.registerCommand('outport.copyEnvVar', (item: any) => {
+    vscode.commands.registerCommand('outport.copyEnvVar', (item: ServiceItem) => {
       if (item?.service) {
         vscode.env.clipboard.writeText(`${item.service.env_var}=${item.service.port}`);
       }
@@ -140,13 +127,16 @@ export function activate(context: vscode.ExtensionContext): void {
                 outputChannel.appendLine('Sharing stopped');
                 vscode.commands.executeCommand('setContext', 'outport.sharing', false);
                 treeProvider.setTunnels([]);
-                refresh();
                 resolve();
               },
               (msg) => {
                 outputChannel.appendLine(`Share error: ${msg}`);
                 vscode.commands.executeCommand('setContext', 'outport.sharing', false);
+                treeProvider.setTunnels([]);
                 resolve();
+              },
+              (msg) => {
+                outputChannel.appendLine(`[share] ${msg}`);
               },
             );
           });

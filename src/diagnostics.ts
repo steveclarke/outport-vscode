@@ -1,5 +1,14 @@
 import * as vscode from 'vscode';
-import * as yaml from 'js-yaml';
+import {
+  OutportConfig,
+  OutportService,
+  OutportComputedValue,
+  TEMPLATE_FIELDS,
+  TEMPLATE_MODIFIERS,
+  STANDALONE_VARS,
+  isOutportYaml,
+  parseOutportConfig,
+} from './schema';
 
 // --- Types ---
 
@@ -10,35 +19,10 @@ export interface DiagnosticError {
   parentKey?: string;
 }
 
-interface OutportService {
-  env_var?: string;
-  protocol?: string;
-  hostname?: string;
-  preferred_port?: number;
-  env_file?: string | string[];
-}
-
-interface OutportComputedValue {
-  value?: string;
-  env_file?: string | string[] | Array<{ file: string; value?: string }>;
-}
-
-interface OutportConfig {
-  name?: string;
-  services?: Record<string, OutportService>;
-  computed?: Record<string, OutportComputedValue>;
-}
-
 // --- Template validation constants ---
 
 const TEMPLATE_VAR_RE = /\$\{(\w+)\.(\w+)(?::(\w+))?\}/g;
 const STANDALONE_VAR_RE = /\$\{(\w+)\}|\$\{(\w+):[+-]/g;
-
-const VALID_FIELDS = new Set(['port', 'hostname', 'url']);
-const VALID_MODIFIERS: Record<string, Set<string>> = {
-  url: new Set(['direct']),
-};
-const VALID_STANDALONE_VARS = new Set(['instance']);
 
 // --- Position mapping ---
 
@@ -140,14 +124,14 @@ function validateTemplateRefs(
         key: computedName,
         parentKey: 'computed',
       });
-    } else if (!VALID_FIELDS.has(field)) {
+    } else if (!TEMPLATE_FIELDS.includes(field)) {
       errors.push({
         message: `Computed "${computedName}": unknown field "${field}" (valid: port, hostname, url)`,
         severity: 'error',
         key: computedName,
         parentKey: 'computed',
       });
-    } else if (modifier && (!VALID_MODIFIERS[field] || !VALID_MODIFIERS[field].has(modifier))) {
+    } else if (modifier && (!TEMPLATE_MODIFIERS[field] || !TEMPLATE_MODIFIERS[field].includes(modifier))) {
       errors.push({
         message: `Computed "${computedName}": unknown modifier "${modifier}" for field "${field}"`,
         severity: 'error',
@@ -160,7 +144,7 @@ function validateTemplateRefs(
   STANDALONE_VAR_RE.lastIndex = 0;
   while ((match = STANDALONE_VAR_RE.exec(template)) !== null) {
     const varName = match[1] || match[2];
-    if (!VALID_STANDALONE_VARS.has(varName)) {
+    if (!STANDALONE_VARS.includes(varName)) {
       errors.push({
         message: `Computed "${computedName}": unknown variable "${varName}" (valid: instance)`,
         severity: 'error',
@@ -275,20 +259,13 @@ export function registerDiagnostics(context: vscode.ExtensionContext): void {
   const diagnose = (document: vscode.TextDocument) => {
     if (!isOutportYaml(document)) return;
 
-    const text = document.getText();
-    let config: OutportConfig;
-    try {
-      config = yaml.load(text) as OutportConfig;
-    } catch {
-      // YAML syntax errors are handled by the YAML extension
+    const config = parseOutportConfig(document);
+    if (!config) {
       collection.delete(document.uri);
       return;
     }
 
-    if (!config || typeof config !== 'object') {
-      collection.delete(document.uri);
-      return;
-    }
+    const text = document.getText();
 
     const errors = validateConfig(config);
     const diagnostics = errors.map(err => {
@@ -313,9 +290,4 @@ export function registerDiagnostics(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidChangeTextDocument(e => diagnose(e.document)),
     vscode.workspace.onDidCloseTextDocument(doc => collection.delete(doc.uri)),
   );
-}
-
-function isOutportYaml(document: vscode.TextDocument): boolean {
-  const name = document.fileName;
-  return name.endsWith('.outport.yml') || name.endsWith('.outport.yaml');
 }

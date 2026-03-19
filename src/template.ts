@@ -1,30 +1,13 @@
 import * as vscode from 'vscode';
-import * as yaml from 'js-yaml';
 import { getPorts } from './cli';
-
-interface OutportConfig {
-  name?: string;
-  services?: Record<string, { env_var?: string; protocol?: string; hostname?: string }>;
-  computed?: Record<string, unknown>;
-}
-
-const SELECTOR: vscode.DocumentSelector = [
-  { language: 'yaml', pattern: '**/.outport.yml' },
-  { language: 'yaml', pattern: '**/.outport.yaml' },
-];
-
-const FIELDS = ['port', 'hostname', 'url'];
-const MODIFIERS: Record<string, string[]> = { url: ['direct'] };
-const STANDALONE_VARS = ['instance'];
-
-function parseConfig(document: vscode.TextDocument): OutportConfig | undefined {
-  try {
-    const config = yaml.load(document.getText()) as OutportConfig;
-    return config && typeof config === 'object' ? config : undefined;
-  } catch {
-    return undefined;
-  }
-}
+import {
+  OutportConfig,
+  OUTPORT_SELECTOR,
+  TEMPLATE_FIELDS,
+  TEMPLATE_MODIFIERS,
+  STANDALONE_VARS,
+  parseOutportConfig,
+} from './schema';
 
 /** Get the template expression at the cursor, e.g. "${rails.url:direct}" */
 function getTemplateContext(document: vscode.TextDocument, position: vscode.Position) {
@@ -38,9 +21,8 @@ function getTemplateContext(document: vscode.TextDocument, position: vscode.Posi
   const closeIdx = afterOpen.indexOf('}');
   const endIdx = closeIdx === -1 ? afterOpen.length : closeIdx;
   const inner = afterOpen.substring(0, endIdx);
-  const cursorOffset = position.character - (openIdx + 2);
 
-  return { inner, cursorOffset, openIdx, endIdx: openIdx + 2 + endIdx };
+  return { inner, openIdx, endIdx: openIdx + 2 + endIdx };
 }
 
 // --- Completion Provider ---
@@ -53,7 +35,7 @@ class OutportCompletionProvider implements vscode.CompletionItemProvider {
     const ctx = getTemplateContext(document, position);
     if (!ctx) return undefined;
 
-    const config = parseConfig(document);
+    const config = parseOutportConfig(document);
     if (!config?.services) return undefined;
 
     const serviceNames = Object.keys(config.services);
@@ -66,7 +48,7 @@ class OutportCompletionProvider implements vscode.CompletionItemProvider {
       const [, svcName, field, partial] = modMatch;
       const colonIdx = openIdx + 2 + svcName.length + 1 + field.length + 1;
       const replaceRange = new vscode.Range(line, colonIdx, line, colonIdx + partial.length);
-      const mods = MODIFIERS[field];
+      const mods = TEMPLATE_MODIFIERS[field];
       if (!mods) return [];
       return mods.map(m => {
         const item = new vscode.CompletionItem(m, vscode.CompletionItemKind.Value);
@@ -83,7 +65,7 @@ class OutportCompletionProvider implements vscode.CompletionItemProvider {
       if (!config.services[svcName]) return [];
       const dotIdx = openIdx + 2 + svcName.length + 1;
       const replaceRange = new vscode.Range(line, dotIdx, line, dotIdx + partial.length);
-      return FIELDS.map(f => {
+      return TEMPLATE_FIELDS.map(f => {
         const item = new vscode.CompletionItem(f, vscode.CompletionItemKind.Field);
         item.detail = `\${${svcName}.${f}}`;
         item.range = replaceRange;
@@ -128,7 +110,7 @@ class OutportHoverProvider implements vscode.HoverProvider {
     const ctx = getTemplateContext(document, position);
     if (!ctx) return undefined;
 
-    const config = parseConfig(document);
+    const config = parseOutportConfig(document);
     if (!config?.services) return undefined;
 
     const { inner, openIdx, endIdx } = ctx;
@@ -242,8 +224,8 @@ class OutportDefinitionProvider implements vscode.DefinitionProvider {
 
 export function registerTemplateIntelligence(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
-    vscode.languages.registerCompletionItemProvider(SELECTOR, new OutportCompletionProvider(), '$', '{', '.', ':'),
-    vscode.languages.registerHoverProvider(SELECTOR, new OutportHoverProvider()),
-    vscode.languages.registerDefinitionProvider(SELECTOR, new OutportDefinitionProvider()),
+    vscode.languages.registerCompletionItemProvider(OUTPORT_SELECTOR, new OutportCompletionProvider(), '$', '{', '.', ':'),
+    vscode.languages.registerHoverProvider(OUTPORT_SELECTOR, new OutportHoverProvider()),
+    vscode.languages.registerDefinitionProvider(OUTPORT_SELECTOR, new OutportDefinitionProvider()),
   );
 }

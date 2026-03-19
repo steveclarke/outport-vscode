@@ -20,5 +20,10 @@ export function createRegistryWatcher(onChanged: () => void): vscode.Disposable 
   watcher.onDidCreate(debouncedRefresh);
   watcher.onDidDelete(debouncedRefresh);
 
-  return watcher;
+  return {
+    dispose: () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      watcher.dispose();
+    },
+  };
 }
