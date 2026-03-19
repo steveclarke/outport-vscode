@@ -1,4 +1,4 @@
-import { execFile } from 'child_process';
+import { execFile, spawn, ChildProcess } from 'child_process';
 import { promisify } from 'util';
 import * as vscode from 'vscode';
 
@@ -97,6 +97,78 @@ export interface DoctorCheck {
 export interface DoctorOutput {
   results: DoctorCheck[];
   passed: boolean;
+}
+
+// --- Share (long-lived process) ---
+
+export interface TunnelInfo {
+  service: string;
+  url: string;
+  port: number;
+}
+
+export interface ShareOutput {
+  tunnels: TunnelInfo[];
+}
+
+let shareProcess: ChildProcess | undefined;
+
+export function isSharing(): boolean {
+  return shareProcess !== undefined;
+}
+
+export function startShare(
+  cwd: string,
+  onTunnels: (tunnels: TunnelInfo[]) => void,
+  onExit: () => void,
+  onError: (message: string) => void,
+): void {
+  if (shareProcess) {
+    onError('Already sharing');
+    return;
+  }
+
+  const bin = getBinaryPath();
+  const proc = spawn(bin, ['share', '--json'], { cwd });
+  shareProcess = proc;
+
+  let stdout = '';
+
+  proc.stdout?.on('data', (chunk: Buffer) => {
+    stdout += chunk.toString();
+    // Try to parse — JSON is complete when we can parse it
+    try {
+      const data = JSON.parse(stdout.trim()) as ShareOutput;
+      if (data.tunnels) {
+        onTunnels(data.tunnels);
+      }
+    } catch {
+      // Not complete yet, keep buffering
+    }
+  });
+
+  proc.stderr?.on('data', (chunk: Buffer) => {
+    const msg = chunk.toString().trim();
+    if (msg) onError(msg);
+  });
+
+  proc.on('error', (err) => {
+    shareProcess = undefined;
+    onError(err.message);
+    onExit();
+  });
+
+  proc.on('close', () => {
+    shareProcess = undefined;
+    onExit();
+  });
+}
+
+export function stopShare(): void {
+  if (shareProcess) {
+    shareProcess.kill('SIGTERM');
+    shareProcess = undefined;
+  }
 }
 
 export async function runDoctor(cwd: string): Promise<CliResult<DoctorOutput>> {

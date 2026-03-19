@@ -84,6 +84,18 @@
         "command": "outport.copyEnvVar",
         "title": "Copy Env Var Assignment",
         "category": "Outport"
+      },
+      {
+        "command": "outport.share",
+        "title": "Share",
+        "category": "Outport",
+        "icon": "$(broadcast)"
+      },
+      {
+        "command": "outport.stopShare",
+        "title": "Stop Sharing",
+        "category": "Outport",
+        "icon": "$(debug-stop)"
       }
     ],
     "menus": {
@@ -105,6 +117,14 @@
         {
           "command": "outport.upForce",
           "when": "view == outportView"
+        },
+        {
+          "command": "outport.share",
+          "when": "view == outportView && !outport.sharing"
+        },
+        {
+          "command": "outport.stopShare",
+          "when": "view == outportView && outport.sharing"
         }
       ],
       "view/item/context": [

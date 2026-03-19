@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { getPorts, runUp, runDown } from './cli';
+import { getPorts, runUp, runDown, startShare, stopShare, isSharing } from './cli';
 import { OutportTreeProvider } from './sidebar/provider';
 import { createStatusBar, updateStatusBar } from './statusbar';
 import { registerDiagnostics } from './diagnostics';
@@ -104,6 +104,41 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.env.clipboard.writeText(`${item.service.env_var}=${item.service.port}`);
       }
     }),
+
+    vscode.commands.registerCommand('outport.share', () => {
+      const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      if (!cwd) return;
+      if (isSharing()) {
+        vscode.window.showInformationMessage('Already sharing');
+        return;
+      }
+      outputChannel.appendLine('> outport share');
+      outputChannel.show(true);
+      vscode.commands.executeCommand('setContext', 'outport.sharing', true);
+      startShare(
+        cwd,
+        (tunnels) => {
+          outputChannel.appendLine(`Sharing ${tunnels.length} service(s)`);
+          for (const t of tunnels) {
+            outputChannel.appendLine(`  ${t.service}: ${t.url}`);
+          }
+          treeProvider.setTunnels(tunnels);
+        },
+        () => {
+          outputChannel.appendLine('Sharing stopped');
+          vscode.commands.executeCommand('setContext', 'outport.sharing', false);
+          treeProvider.setTunnels([]);
+          refresh();
+        },
+        (msg) => {
+          outputChannel.appendLine(`Share error: ${msg}`);
+        },
+      );
+    }),
+
+    vscode.commands.registerCommand('outport.stopShare', () => {
+      stopShare();
+    }),
   );
 
   // Populate the status bar immediately on activation, without waiting
@@ -116,4 +151,6 @@ export function activate(context: vscode.ExtensionContext): void {
   outputChannel.appendLine('Outport extension activated');
 }
 
-export function deactivate(): void {}
+export function deactivate(): void {
+  stopShare();
+}

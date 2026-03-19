@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ServiceJSON, ComputedJSON, DoctorCheck } from '../cli';
+import { ServiceJSON, ComputedJSON, DoctorCheck, TunnelInfo } from '../cli';
 
 export class ProjectItem extends vscode.TreeItem {
   constructor(
@@ -98,6 +98,29 @@ export class DoctorCheckItem extends vscode.TreeItem {
     } else {
       this.iconPath = new vscode.ThemeIcon('warning', new vscode.ThemeColor('problemsWarningIcon.foreground'));
     }
+  }
+}
+
+export class TunnelHeaderItem extends vscode.TreeItem {
+  constructor() {
+    super('Sharing', vscode.TreeItemCollapsibleState.Expanded);
+    this.contextValue = 'tunnelHeader';
+    this.iconPath = new vscode.ThemeIcon('broadcast', new vscode.ThemeColor('terminal.ansiGreen'));
+  }
+}
+
+export class TunnelItem extends vscode.TreeItem {
+  constructor(tunnel: TunnelInfo) {
+    super(tunnel.service, vscode.TreeItemCollapsibleState.None);
+    this.description = tunnel.url;
+    this.tooltip = `${tunnel.service}: ${tunnel.url} → localhost:${tunnel.port}`;
+    this.contextValue = 'tunnel';
+    this.iconPath = new vscode.ThemeIcon('link-external');
+    this.command = {
+      command: 'outport.openService',
+      title: 'Open in Browser',
+      arguments: [tunnel.url],
+    };
   }
 }
 

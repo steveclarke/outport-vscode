@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { getPorts, runDoctor, CliResult, PortsOutput, DoctorCheck } from '../cli';
-import { ProjectItem, ServiceItem, ComputedHeaderItem, ComputedItem, DoctorHeaderItem, DoctorCheckItem, MessageItem } from './items';
+import { getPorts, runDoctor, CliResult, PortsOutput, DoctorCheck, TunnelInfo } from '../cli';
+import { ProjectItem, ServiceItem, ComputedHeaderItem, ComputedItem, DoctorHeaderItem, DoctorCheckItem, TunnelHeaderItem, TunnelItem, MessageItem } from './items';
 
-type OutportTreeItem = ProjectItem | ServiceItem | ComputedHeaderItem | ComputedItem | DoctorHeaderItem | DoctorCheckItem | MessageItem;
+type OutportTreeItem = ProjectItem | ServiceItem | ComputedHeaderItem | ComputedItem | DoctorHeaderItem | DoctorCheckItem | TunnelHeaderItem | TunnelItem | MessageItem;
 
 export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeItem> {
   private _onDidChangeTreeData = new vscode.EventEmitter<OutportTreeItem | undefined | void>();
@@ -10,6 +10,7 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
 
   private projectData: Map<string, PortsOutput> = new Map();
   private doctorIssues: DoctorCheck[] = [];
+  private activeTunnels: TunnelInfo[] = [];
   private outputChannel: vscode.OutputChannel;
   private onDataLoaded?: (result: CliResult<PortsOutput>) => void;
   private healthPollTimer?: ReturnType<typeof setInterval>;
@@ -31,6 +32,11 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
 
   refresh(): void {
     this.projectData.clear();
+    this._onDidChangeTreeData.fire();
+  }
+
+  setTunnels(tunnels: TunnelInfo[]): void {
+    this.activeTunnels = tunnels;
     this._onDidChangeTreeData.fire();
   }
 
@@ -63,6 +69,9 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
     }
     if (element instanceof DoctorHeaderItem) {
       return this.doctorIssues.map(check => new DoctorCheckItem(check));
+    }
+    if (element instanceof TunnelHeaderItem) {
+      return this.activeTunnels.map(t => new TunnelItem(t));
     }
     return [];
   }
@@ -111,6 +120,11 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
       ? OutportTreeProvider.FAST_POLL_MS
       : OutportTreeProvider.SLOW_POLL_MS,
     );
+
+    // Show active tunnels if sharing
+    if (this.activeTunnels.length > 0) {
+      items.push(new TunnelHeaderItem());
+    }
 
     // Run doctor and show issues if any
     const firstFolder = folders[0].uri.fsPath;
