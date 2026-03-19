@@ -3,6 +3,7 @@ import { getPorts, runUp, runDown } from './cli';
 import { OutportTreeProvider } from './sidebar/provider';
 import { createStatusBar, updateStatusBar } from './statusbar';
 import { registerDiagnostics } from './diagnostics';
+import { registerTemplateIntelligence } from './template';
 import { createRegistryWatcher } from './watcher';
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -13,6 +14,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const statusBar = createStatusBar(context);
 
   registerDiagnostics(context);
+  registerTemplateIntelligence(context);
 
   const treeProvider = new OutportTreeProvider(outputChannel, (result) => {
     updateStatusBar(result);
