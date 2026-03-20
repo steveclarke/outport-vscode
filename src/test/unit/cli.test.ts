@@ -1,4 +1,5 @@
 import * as assert from "assert"
+import { categorizeCliError } from "../../cli"
 
 // We test the parsing logic in isolation — we can't easily test execFile in unit tests
 // so we test the type contracts and JSON parsing
@@ -50,5 +51,35 @@ suite("CLI Output Parsing", () => {
     assert.strictEqual(data.services.postgres.url, undefined)
     assert.strictEqual(data.services.postgres.up, undefined)
     assert.strictEqual(data.computed, undefined)
+  })
+})
+
+suite("CLI Error Categorization", () => {
+  test("categorizes ENOENT as not-found", () => {
+    const result = categorizeCliError("", "ENOENT", "outport")
+    assert.strictEqual(result.kind, "not-found")
+  })
+
+  test("categorizes missing yml as not-registered", () => {
+    const result = categorizeCliError("No .outport.yml found", undefined, "outport")
+    assert.strictEqual(result.kind, "not-registered")
+  })
+
+  test("categorizes registry miss as not-registered", () => {
+    const result = categorizeCliError("myapp not found in registry", undefined, "outport")
+    assert.strictEqual(result.kind, "not-registered")
+  })
+
+  test("categorizes external approval error", () => {
+    const stderr =
+      "external env files require interactive approval; use -y to allow or move files inside the project directory"
+    const result = categorizeCliError(stderr, undefined, "outport")
+    assert.strictEqual(result.kind, "external-approval")
+  })
+
+  test("categorizes unknown errors as cli-error", () => {
+    const result = categorizeCliError("something went wrong", undefined, "outport")
+    assert.strictEqual(result.kind, "cli-error")
+    assert.strictEqual(result.message, "something went wrong")
   })
 })

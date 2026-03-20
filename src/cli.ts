@@ -30,8 +30,21 @@ export interface PortsOutput {
 }
 
 export interface CliError {
-  kind: "not-found" | "not-registered" | "cli-error"
+  kind: "not-found" | "not-registered" | "external-approval" | "cli-error"
   message: string
+}
+
+export function categorizeCliError(stderr: string, code: string | undefined, bin: string): CliError {
+  if (code === "ENOENT") {
+    return { kind: "not-found", message: `outport binary not found at "${bin}"` }
+  }
+  if (stderr.includes("external env files require interactive approval")) {
+    return { kind: "external-approval", message: stderr }
+  }
+  if (stderr.includes("No .outport.yml found") || stderr.includes("not found in registry")) {
+    return { kind: "not-registered", message: stderr }
+  }
+  return { kind: "cli-error", message: stderr }
 }
 
 export type CliResult<T> = { ok: true; data: T } | { ok: false; error: CliError }
@@ -50,17 +63,8 @@ async function runOutport(args: string[], cwd: string): Promise<CliResult<string
     })
     return { ok: true, data: stdout }
   } catch (err: any) {
-    if (err.code === "ENOENT") {
-      return {
-        ok: false,
-        error: { kind: "not-found", message: `outport binary not found at "${bin}"` },
-      }
-    }
     const stderr = err.stderr?.trim() || err.message
-    if (stderr.includes("No .outport.yml found") || stderr.includes("not found in registry")) {
-      return { ok: false, error: { kind: "not-registered", message: stderr } }
-    }
-    return { ok: false, error: { kind: "cli-error", message: stderr } }
+    return { ok: false, error: categorizeCliError(stderr, err.code, bin) }
   }
 }
 
