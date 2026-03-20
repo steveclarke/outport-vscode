@@ -144,6 +144,7 @@ export function startShare(
   onExit: () => void,
   onError: (message: string) => void,
   onStderr?: (message: string) => void,
+  options?: { yes?: boolean; onExternalApproval?: () => void },
 ): void {
   if (shareProcess) {
     onError("Already sharing")
@@ -151,17 +152,19 @@ export function startShare(
   }
 
   const bin = getBinaryPath()
-  const proc = spawn(bin, ["share", "--json"], { cwd })
+  const args = ["share", "--json"]
+  if (options?.yes) args.push("--yes")
+  const proc = spawn(bin, args, { cwd })
   shareProcess = proc
 
   let stdout = ""
+  let stderrBuf = ""
 
   proc.stdout?.on("data", (chunk: Buffer) => {
     stdout += chunk.toString()
-    // Try to parse — JSON is complete when we can parse it
     try {
       const data = JSON.parse(stdout.trim()) as ShareOutput
-      stdout = "" // Clear buffer after successful parse
+      stdout = ""
       if (data.tunnels) {
         onTunnels(data.tunnels)
       }
@@ -171,8 +174,10 @@ export function startShare(
   })
 
   proc.stderr?.on("data", (chunk: Buffer) => {
-    const msg = chunk.toString().trim()
-    if (msg) onStderr?.(msg)
+    const msg = chunk.toString()
+    stderrBuf += msg
+    const trimmed = msg.trim()
+    if (trimmed) onStderr?.(trimmed)
   })
 
   proc.on("error", (err) => {
@@ -187,7 +192,14 @@ export function startShare(
     if (shareProcess === proc) {
       shareProcess = undefined
     }
-    onExit()
+    if (
+      stderrBuf.includes("external env files require interactive approval") &&
+      options?.onExternalApproval
+    ) {
+      options.onExternalApproval()
+    } else {
+      onExit()
+    }
   })
 }
 

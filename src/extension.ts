@@ -37,6 +37,77 @@ async function runCliCommand(
   refresh()
 }
 
+function doShare(
+  cwd: string,
+  outputChannel: vscode.OutputChannel,
+  treeProvider: OutportTreeProvider,
+  yes: boolean,
+): void {
+  outputChannel.appendLine(`> outport share${yes ? " --yes" : ""}`)
+  outputChannel.show(true)
+  vscode.commands.executeCommand("setContext", "outport.sharing", true)
+
+  vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: "Starting tunnels…",
+      cancellable: true,
+    },
+    (_progress, token) => {
+      return new Promise<void>((resolve) => {
+        token.onCancellationRequested(() => {
+          stopShare()
+          resolve()
+        })
+
+        startShare(
+          cwd,
+          (tunnels) => {
+            outputChannel.appendLine(`Sharing ${tunnels.length} service(s)`)
+            for (const t of tunnels) {
+              outputChannel.appendLine(`  ${t.service}: ${t.url}`)
+            }
+            treeProvider.setTunnels(tunnels)
+            resolve()
+            vscode.window.showInformationMessage(`Sharing ${tunnels.length} service(s)`)
+          },
+          () => {
+            outputChannel.appendLine("Sharing stopped")
+            vscode.commands.executeCommand("setContext", "outport.sharing", false)
+            treeProvider.setTunnels([])
+            resolve()
+          },
+          (msg) => {
+            outputChannel.appendLine(`Share error: ${msg}`)
+            vscode.commands.executeCommand("setContext", "outport.sharing", false)
+            treeProvider.setTunnels([])
+            resolve()
+          },
+          (msg) => {
+            outputChannel.appendLine(`[share] ${msg}`)
+          },
+          {
+            yes,
+            async onExternalApproval() {
+              resolve() // Close the progress notification
+              const choice = await vscode.window.showWarningMessage(
+                "This project writes to env files outside the project directory. Allow?",
+                "Allow",
+              )
+              if (choice === "Allow") {
+                doShare(cwd, outputChannel, treeProvider, true)
+              } else {
+                vscode.commands.executeCommand("setContext", "outport.sharing", false)
+                treeProvider.setTunnels([])
+              }
+            },
+          },
+        )
+      })
+    },
+  )
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   const outputChannel = vscode.window.createOutputChannel("Outport")
 
@@ -131,53 +202,7 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.window.showInformationMessage("Already sharing")
         return
       }
-      outputChannel.appendLine("> outport share")
-      outputChannel.show(true)
-      vscode.commands.executeCommand("setContext", "outport.sharing", true)
-
-      vscode.window.withProgress(
-        {
-          location: vscode.ProgressLocation.Notification,
-          title: "Starting tunnels…",
-          cancellable: true,
-        },
-        (_progress, token) => {
-          return new Promise<void>((resolve) => {
-            token.onCancellationRequested(() => {
-              stopShare()
-              resolve()
-            })
-
-            startShare(
-              cwd,
-              (tunnels) => {
-                outputChannel.appendLine(`Sharing ${tunnels.length} service(s)`)
-                for (const t of tunnels) {
-                  outputChannel.appendLine(`  ${t.service}: ${t.url}`)
-                }
-                treeProvider.setTunnels(tunnels)
-                resolve()
-                vscode.window.showInformationMessage(`Sharing ${tunnels.length} service(s)`)
-              },
-              () => {
-                outputChannel.appendLine("Sharing stopped")
-                vscode.commands.executeCommand("setContext", "outport.sharing", false)
-                treeProvider.setTunnels([])
-                resolve()
-              },
-              (msg) => {
-                outputChannel.appendLine(`Share error: ${msg}`)
-                vscode.commands.executeCommand("setContext", "outport.sharing", false)
-                treeProvider.setTunnels([])
-                resolve()
-              },
-              (msg) => {
-                outputChannel.appendLine(`[share] ${msg}`)
-              },
-            )
-          })
-        },
-      )
+      doShare(cwd, outputChannel, treeProvider, false)
     }),
 
     vscode.commands.registerCommand("outport.stopShare", () => {
