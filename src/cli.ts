@@ -30,8 +30,23 @@ export interface PortsOutput {
 }
 
 export interface CliError {
-  kind: "not-found" | "not-registered" | "cli-error"
+  kind: "not-found" | "not-registered" | "external-approval" | "cli-error"
   message: string
+}
+
+const EXTERNAL_APPROVAL_MARKER = "external env files require interactive approval"
+
+export function categorizeCliError(stderr: string, code: string | undefined, bin: string): CliError {
+  if (code === "ENOENT") {
+    return { kind: "not-found", message: `outport binary not found at "${bin}"` }
+  }
+  if (stderr.includes(EXTERNAL_APPROVAL_MARKER)) {
+    return { kind: "external-approval", message: stderr }
+  }
+  if (stderr.includes("No .outport.yml found") || stderr.includes("not found in registry")) {
+    return { kind: "not-registered", message: stderr }
+  }
+  return { kind: "cli-error", message: stderr }
 }
 
 export type CliResult<T> = { ok: true; data: T } | { ok: false; error: CliError }
@@ -50,17 +65,8 @@ async function runOutport(args: string[], cwd: string): Promise<CliResult<string
     })
     return { ok: true, data: stdout }
   } catch (err: any) {
-    if (err.code === "ENOENT") {
-      return {
-        ok: false,
-        error: { kind: "not-found", message: `outport binary not found at "${bin}"` },
-      }
-    }
     const stderr = err.stderr?.trim() || err.message
-    if (stderr.includes("No .outport.yml found") || stderr.includes("not found in registry")) {
-      return { ok: false, error: { kind: "not-registered", message: stderr } }
-    }
-    return { ok: false, error: { kind: "cli-error", message: stderr } }
+    return { ok: false, error: categorizeCliError(stderr, err.code, bin) }
   }
 }
 
@@ -82,14 +88,25 @@ export async function getPorts(cwd: string): Promise<CliResult<PortsOutput>> {
   }
 }
 
-export async function runUp(cwd: string, force: boolean): Promise<CliResult<string>> {
+export function buildUpArgs(force: boolean, yes: boolean): string[] {
   const args = ["up", "--json"]
   if (force) args.push("--force")
-  return runOutport(args, cwd)
+  if (yes) args.push("--yes")
+  return args
 }
 
-export async function runDown(cwd: string): Promise<CliResult<string>> {
-  return runOutport(["down"], cwd)
+export function buildDownArgs(yes: boolean): string[] {
+  const args = ["down"]
+  if (yes) args.push("--yes")
+  return args
+}
+
+export async function runUp(cwd: string, force: boolean, yes = false): Promise<CliResult<string>> {
+  return runOutport(buildUpArgs(force, yes), cwd)
+}
+
+export async function runDown(cwd: string, yes = false): Promise<CliResult<string>> {
+  return runOutport(buildDownArgs(yes), cwd)
 }
 
 export interface DoctorCheck {
@@ -129,6 +146,7 @@ export function startShare(
   onExit: () => void,
   onError: (message: string) => void,
   onStderr?: (message: string) => void,
+  options?: { yes?: boolean; onExternalApproval?: () => void },
 ): void {
   if (shareProcess) {
     onError("Already sharing")
@@ -136,17 +154,19 @@ export function startShare(
   }
 
   const bin = getBinaryPath()
-  const proc = spawn(bin, ["share", "--json"], { cwd })
+  const args = ["share", "--json"]
+  if (options?.yes) args.push("--yes")
+  const proc = spawn(bin, args, { cwd })
   shareProcess = proc
 
   let stdout = ""
+  let needsApproval = false
 
   proc.stdout?.on("data", (chunk: Buffer) => {
     stdout += chunk.toString()
-    // Try to parse — JSON is complete when we can parse it
     try {
       const data = JSON.parse(stdout.trim()) as ShareOutput
-      stdout = "" // Clear buffer after successful parse
+      stdout = ""
       if (data.tunnels) {
         onTunnels(data.tunnels)
       }
@@ -156,8 +176,12 @@ export function startShare(
   })
 
   proc.stderr?.on("data", (chunk: Buffer) => {
-    const msg = chunk.toString().trim()
-    if (msg) onStderr?.(msg)
+    const msg = chunk.toString()
+    if (!needsApproval && msg.includes(EXTERNAL_APPROVAL_MARKER)) {
+      needsApproval = true
+    }
+    const trimmed = msg.trim()
+    if (trimmed) onStderr?.(trimmed)
   })
 
   proc.on("error", (err) => {
@@ -172,7 +196,11 @@ export function startShare(
     if (shareProcess === proc) {
       shareProcess = undefined
     }
-    onExit()
+    if (needsApproval && options?.onExternalApproval) {
+      options.onExternalApproval()
+    } else {
+      onExit()
+    }
   })
 }
 
@@ -201,12 +229,7 @@ export async function runDoctor(cwd: string): Promise<CliResult<DoctorOutput>> {
         /* fall through */
       }
     }
-    if (err.code === "ENOENT") {
-      return {
-        ok: false,
-        error: { kind: "not-found", message: `outport binary not found at "${bin}"` },
-      }
-    }
-    return { ok: false, error: { kind: "cli-error", message: err.stderr?.trim() || err.message } }
+    const stderr = err.stderr?.trim() || err.message
+    return { ok: false, error: categorizeCliError(stderr, err.code, bin) }
   }
 }
