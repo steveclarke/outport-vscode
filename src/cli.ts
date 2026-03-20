@@ -86,14 +86,25 @@ export async function getPorts(cwd: string): Promise<CliResult<PortsOutput>> {
   }
 }
 
-export async function runUp(cwd: string, force: boolean): Promise<CliResult<string>> {
+export function buildUpArgs(force: boolean, yes: boolean): string[] {
   const args = ["up", "--json"]
   if (force) args.push("--force")
-  return runOutport(args, cwd)
+  if (yes) args.push("--yes")
+  return args
 }
 
-export async function runDown(cwd: string): Promise<CliResult<string>> {
-  return runOutport(["down"], cwd)
+export function buildDownArgs(yes: boolean): string[] {
+  const args = ["down"]
+  if (yes) args.push("--yes")
+  return args
+}
+
+export async function runUp(cwd: string, force: boolean, yes = false): Promise<CliResult<string>> {
+  return runOutport(buildUpArgs(force, yes), cwd)
+}
+
+export async function runDown(cwd: string, yes = false): Promise<CliResult<string>> {
+  return runOutport(buildDownArgs(yes), cwd)
 }
 
 export interface DoctorCheck {

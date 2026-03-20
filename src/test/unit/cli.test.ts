@@ -1,5 +1,5 @@
 import * as assert from "assert"
-import { categorizeCliError } from "../../cli"
+import { categorizeCliError, buildUpArgs, buildDownArgs } from "../../cli"
 
 // We test the parsing logic in isolation — we can't easily test execFile in unit tests
 // so we test the type contracts and JSON parsing
@@ -81,5 +81,37 @@ suite("CLI Error Categorization", () => {
     const result = categorizeCliError("something went wrong", undefined, "outport")
     assert.strictEqual(result.kind, "cli-error")
     assert.strictEqual(result.message, "something went wrong")
+  })
+})
+
+suite("CLI Command Args", () => {
+  test("runUp builds args without yes", () => {
+    const args = buildUpArgs(false, false)
+    assert.deepStrictEqual(args, ["up", "--json"])
+  })
+
+  test("runUp builds args with force", () => {
+    const args = buildUpArgs(true, false)
+    assert.deepStrictEqual(args, ["up", "--json", "--force"])
+  })
+
+  test("runUp builds args with yes", () => {
+    const args = buildUpArgs(false, true)
+    assert.deepStrictEqual(args, ["up", "--json", "--yes"])
+  })
+
+  test("runUp builds args with force and yes", () => {
+    const args = buildUpArgs(true, true)
+    assert.deepStrictEqual(args, ["up", "--json", "--force", "--yes"])
+  })
+
+  test("runDown builds args without yes", () => {
+    const args = buildDownArgs(false)
+    assert.deepStrictEqual(args, ["down"])
+  })
+
+  test("runDown builds args with yes", () => {
+    const args = buildDownArgs(true)
+    assert.deepStrictEqual(args, ["down", "--yes"])
   })
 })
