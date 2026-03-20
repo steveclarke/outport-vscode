@@ -7,6 +7,9 @@ import { registerDiagnostics } from "./diagnostics"
 import { registerTemplateIntelligence } from "./template"
 import { createRegistryWatcher } from "./watcher"
 
+const EXTERNAL_APPROVAL_PROMPT =
+  "This project writes to env files outside the project directory. Allow?"
+
 async function runCliCommand(
   label: string,
   cliFn: (cwd: string) => Promise<CliResult<string>>,
@@ -21,7 +24,7 @@ async function runCliCommand(
   let result = await cliFn(cwd)
   if (!result.ok && result.error.kind === "external-approval" && approvalRetryFn) {
     const choice = await vscode.window.showWarningMessage(
-      "This project writes to env files outside the project directory. Allow?",
+      EXTERNAL_APPROVAL_PROMPT,
       "Allow",
     )
     if (choice === "Allow") {
@@ -91,7 +94,7 @@ function doShare(
             async onExternalApproval() {
               resolve() // Close the progress notification
               const choice = await vscode.window.showWarningMessage(
-                "This project writes to env files outside the project directory. Allow?",
+                EXTERNAL_APPROVAL_PROMPT,
                 "Allow",
               )
               if (choice === "Allow") {

@@ -34,11 +34,13 @@ export interface CliError {
   message: string
 }
 
+const EXTERNAL_APPROVAL_MARKER = "external env files require interactive approval"
+
 export function categorizeCliError(stderr: string, code: string | undefined, bin: string): CliError {
   if (code === "ENOENT") {
     return { kind: "not-found", message: `outport binary not found at "${bin}"` }
   }
-  if (stderr.includes("external env files require interactive approval")) {
+  if (stderr.includes(EXTERNAL_APPROVAL_MARKER)) {
     return { kind: "external-approval", message: stderr }
   }
   if (stderr.includes("No .outport.yml found") || stderr.includes("not found in registry")) {
@@ -158,7 +160,7 @@ export function startShare(
   shareProcess = proc
 
   let stdout = ""
-  let stderrBuf = ""
+  let needsApproval = false
 
   proc.stdout?.on("data", (chunk: Buffer) => {
     stdout += chunk.toString()
@@ -175,7 +177,9 @@ export function startShare(
 
   proc.stderr?.on("data", (chunk: Buffer) => {
     const msg = chunk.toString()
-    stderrBuf += msg
+    if (!needsApproval && msg.includes(EXTERNAL_APPROVAL_MARKER)) {
+      needsApproval = true
+    }
     const trimmed = msg.trim()
     if (trimmed) onStderr?.(trimmed)
   })
@@ -192,10 +196,7 @@ export function startShare(
     if (shareProcess === proc) {
       shareProcess = undefined
     }
-    if (
-      stderrBuf.includes("external env files require interactive approval") &&
-      options?.onExternalApproval
-    ) {
+    if (needsApproval && options?.onExternalApproval) {
       options.onExternalApproval()
     } else {
       onExit()
@@ -228,12 +229,7 @@ export async function runDoctor(cwd: string): Promise<CliResult<DoctorOutput>> {
         /* fall through */
       }
     }
-    if (err.code === "ENOENT") {
-      return {
-        ok: false,
-        error: { kind: "not-found", message: `outport binary not found at "${bin}"` },
-      }
-    }
-    return { ok: false, error: { kind: "cli-error", message: err.stderr?.trim() || err.message } }
+    const stderr = err.stderr?.trim() || err.message
+    return { ok: false, error: categorizeCliError(stderr, err.code, bin) }
   }
 }
