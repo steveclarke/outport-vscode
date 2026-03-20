@@ -12,12 +12,23 @@ async function runCliCommand(
   cliFn: (cwd: string) => Promise<CliResult<string>>,
   outputChannel: vscode.OutputChannel,
   refresh: () => void,
+  approvalRetryFn?: (cwd: string) => Promise<CliResult<string>>,
 ): Promise<void> {
   const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
   if (!cwd) return
   outputChannel.appendLine(`> ${label}`)
   outputChannel.show(true)
-  const result = await cliFn(cwd)
+  let result = await cliFn(cwd)
+  if (!result.ok && result.error.kind === "external-approval" && approvalRetryFn) {
+    const choice = await vscode.window.showWarningMessage(
+      "This project writes to env files outside the project directory. Allow?",
+      "Allow",
+    )
+    if (choice === "Allow") {
+      outputChannel.appendLine(`> ${label} --yes`)
+      result = await approvalRetryFn(cwd)
+    }
+  }
   if (result.ok) {
     outputChannel.appendLine(result.data)
   } else {
@@ -59,15 +70,33 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("outport.refresh", () => refresh()),
 
     vscode.commands.registerCommand("outport.up", () =>
-      runCliCommand("outport up", (cwd) => runUp(cwd, false), outputChannel, refresh),
+      runCliCommand(
+        "outport up",
+        (cwd) => runUp(cwd, false),
+        outputChannel,
+        refresh,
+        (cwd) => runUp(cwd, false, true),
+      ),
     ),
 
     vscode.commands.registerCommand("outport.upForce", () =>
-      runCliCommand("outport up --force", (cwd) => runUp(cwd, true), outputChannel, refresh),
+      runCliCommand(
+        "outport up --force",
+        (cwd) => runUp(cwd, true),
+        outputChannel,
+        refresh,
+        (cwd) => runUp(cwd, true, true),
+      ),
     ),
 
     vscode.commands.registerCommand("outport.down", () =>
-      runCliCommand("outport down", runDown, outputChannel, refresh),
+      runCliCommand(
+        "outport down",
+        (cwd) => runDown(cwd),
+        outputChannel,
+        refresh,
+        (cwd) => runDown(cwd, true),
+      ),
     ),
 
     vscode.commands.registerCommand("outport.openService", (urlOrItem: string | ServiceItem) => {
