@@ -43,7 +43,7 @@ export function categorizeCliError(stderr: string, code: string | undefined, bin
   if (stderr.includes(EXTERNAL_APPROVAL_MARKER)) {
     return { kind: "external-approval", message: stderr }
   }
-  if (stderr.includes("No .outport.yml found") || stderr.includes("not found in registry")) {
+  if (stderr.includes("No outport.yml found") || stderr.includes("not found in registry")) {
     return { kind: "not-registered", message: stderr }
   }
   return { kind: "cli-error", message: stderr }

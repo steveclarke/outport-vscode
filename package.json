@@ -17,8 +17,8 @@
     "Other"
   ],
   "activationEvents": [
-    "workspaceContains:.outport.yml",
-    "workspaceContains:.outport.yaml"
+    "workspaceContains:outport.yml",
+    "workspaceContains:outport.yaml"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -161,11 +161,11 @@
     },
     "yamlValidation": [
       {
-        "fileMatch": ".outport.yml",
+        "fileMatch": "outport.yml",
         "url": "./schemas/outport.schema.json"
       },
       {
-        "fileMatch": ".outport.yaml",
+        "fileMatch": "outport.yaml",
         "url": "./schemas/outport.schema.json"
       }
     ]

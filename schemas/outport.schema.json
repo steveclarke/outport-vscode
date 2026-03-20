@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Outport Configuration",
-  "description": "Configuration file for Outport port manager (.outport.yml)",
+  "description": "Configuration file for Outport port manager (outport.yml)",
   "type": "object",
   "required": ["name", "services"],
   "additionalProperties": false,

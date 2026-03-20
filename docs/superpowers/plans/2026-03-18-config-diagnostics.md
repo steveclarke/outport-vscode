@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add real-time semantic validation for `.outport.yml` files that catches errors the JSON Schema can't express, shown as squiggles in the Problems panel.
+**Goal:** Add real-time semantic validation for `outport.yml` files that catches errors the JSON Schema can't express, shown as squiggles in the Problems panel.
 
-**Architecture:** Single `src/diagnostics.ts` module exports a `registerDiagnostics(context)` function called from `extension.ts`. It listens for document open/change/save on `.outport.yml`/`.outport.yaml` files, parses YAML with `js-yaml`, runs 9 validation checks mirroring the Go CLI's `config.validate()`, and maps errors to document positions using text search. Pure TypeScript — no CLI dependency needed.
+**Architecture:** Single `src/diagnostics.ts` module exports a `registerDiagnostics(context)` function called from `extension.ts`. It listens for document open/change/save on `outport.yml`/`outport.yaml` files, parses YAML with `js-yaml`, runs 9 validation checks mirroring the Go CLI's `config.validate()`, and maps errors to document positions using text search. Pure TypeScript — no CLI dependency needed.
 
 **Tech Stack:** `js-yaml` for YAML parsing, VS Code `DiagnosticCollection` API.
 
@@ -790,7 +790,7 @@ export function registerDiagnostics(context: vscode.ExtensionContext): void {
 
 function isOutportYaml(document: vscode.TextDocument): boolean {
   const name = document.fileName;
-  return name.endsWith('.outport.yml') || name.endsWith('.outport.yaml');
+  return name.endsWith('/outport.yml') || name.endsWith('/outport.yaml');
 }
 ```
 
@@ -817,7 +817,7 @@ Expected: success
 
 - [ ] **Step 4: Manual test**
 
-Press F5, open a `.outport.yml` with a hostname that has no protocol. Verify the error appears in the Problems panel with source "outport".
+Press F5, open an `outport.yml` with a hostname that has no protocol. Verify the error appears in the Problems panel with source "outport".
 
 - [ ] **Step 5: Commit**
 
@@ -841,8 +841,8 @@ Add to the existing integration test suite:
 test('diagnostics collection is registered', async () => {
   const ext = vscode.extensions.getExtension('steveclarke.outport');
   await ext?.activate();
-  const files = await vscode.workspace.findFiles('.outport.yml');
-  assert.ok(files.length > 0, 'Should find .outport.yml in test workspace');
+  const files = await vscode.workspace.findFiles('outport.yml');
+  assert.ok(files.length > 0, 'Should find outport.yml in test workspace');
 });
 ```
 

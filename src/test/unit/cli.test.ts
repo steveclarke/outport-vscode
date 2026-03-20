@@ -61,7 +61,7 @@ suite("CLI Error Categorization", () => {
   })
 
   test("categorizes missing yml as not-registered", () => {
-    const result = categorizeCliError("No .outport.yml found", undefined, "outport")
+    const result = categorizeCliError("No outport.yml found", undefined, "outport")
     assert.strictEqual(result.kind, "not-registered")
   })
 

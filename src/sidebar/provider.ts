@@ -231,7 +231,7 @@ export class OutportTreeProvider implements vscode.TreeDataProvider<OutportTreeI
     }
 
     if (items.length === 0) {
-      return [new MessageItem("No .outport.yml found", "info")]
+      return [new MessageItem("No outport.yml found", "info")]
     }
 
     if (this.activeTunnels.length > 0) {

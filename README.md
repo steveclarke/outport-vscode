@@ -18,7 +18,7 @@
 - **Clickable URLs** — Click any HTTP service to open it in your browser
 - **Copy to clipboard** — Right-click to copy ports, URLs, or env var assignments
 - **Status bar** — Shows your project name and instance at a glance
-- **Config authoring** — Autocomplete and validation for `.outport.yml`
+- **Config authoring** — Autocomplete and validation for `outport.yml`
 - **Auto-refresh** — Sidebar updates when you run `outport up` or `outport down`, or when external changes are detected
 
 ## Requirements

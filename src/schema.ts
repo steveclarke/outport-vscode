@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import * as yaml from "js-yaml"
 
-// --- Config types (parsed from .outport.yml) ---
+// --- Config types (parsed from outport.yml) ---
 
 export interface OutportService {
   env_var?: string
@@ -33,13 +33,13 @@ export const STANDALONE_VARS = ["instance"]
 // --- File matching ---
 
 export const OUTPORT_SELECTOR: vscode.DocumentSelector = [
-  { language: "yaml", pattern: "**/.outport.yml" },
-  { language: "yaml", pattern: "**/.outport.yaml" },
+  { language: "yaml", pattern: "**/outport.yml" },
+  { language: "yaml", pattern: "**/outport.yaml" },
 ]
 
 export function isOutportYaml(document: vscode.TextDocument): boolean {
   const name = document.fileName
-  return name.endsWith(".outport.yml") || name.endsWith(".outport.yaml")
+  return name.endsWith("/outport.yml") || name.endsWith("/outport.yaml")
 }
 
 // --- YAML parsing ---

@@ -21,8 +21,8 @@ npm run test:unit      # Unit tests only
 - **`sidebar/provider.ts`** — `OutportTreeProvider` implements `TreeDataProvider`. Two-speed polling (5s when services are down, 30s when healthy). Deduplicates projects across multi-folder workspaces.
 - **`watcher.ts`** — Watches the outport registry at `~/.local/share/outport/*.json` to detect external changes.
 - **`statusbar.ts`** — Status bar indicator.
-- **`diagnostics.ts`** — Real-time validation of `.outport.yml` files (duplicate env vars, invalid template refs).
-- **`template.ts`** — Completion, hover, and go-to-definition for template expressions in `.outport.yml`.
+- **`diagnostics.ts`** — Real-time validation of `outport.yml` files (duplicate env vars, invalid template refs).
+- **`template.ts`** — Completion, hover, and go-to-definition for template expressions in `outport.yml`.
 - **`schema.ts`** — Shared types, constants, and YAML parsing used by diagnostics and template intelligence.
 
 Data flow: CLI returns JSON → provider parses into tree items → tree view renders. File watcher and polling trigger re-fetches.
