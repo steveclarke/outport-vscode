@@ -36,7 +36,11 @@ export interface CliError {
 
 const EXTERNAL_APPROVAL_MARKER = "external env files require interactive approval"
 
-export function categorizeCliError(stderr: string, code: string | undefined, bin: string): CliError {
+export function categorizeCliError(
+  stderr: string,
+  code: string | undefined,
+  bin: string,
+): CliError {
   if (code === "ENOENT") {
     return { kind: "not-found", message: `outport binary not found at "${bin}"` }
   }

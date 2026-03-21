@@ -23,10 +23,7 @@ async function runCliCommand(
   outputChannel.show(true)
   let result = await cliFn(cwd)
   if (!result.ok && result.error.kind === "external-approval" && approvalRetryFn) {
-    const choice = await vscode.window.showWarningMessage(
-      EXTERNAL_APPROVAL_PROMPT,
-      "Allow",
-    )
+    const choice = await vscode.window.showWarningMessage(EXTERNAL_APPROVAL_PROMPT, "Allow")
     if (choice === "Allow") {
       outputChannel.appendLine(`> ${label} --yes`)
       result = await approvalRetryFn(cwd)
