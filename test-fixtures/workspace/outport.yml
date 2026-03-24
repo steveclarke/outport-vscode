@@ -3,7 +3,6 @@ name: testapp
 services:
   web:
     env_var: PORT
-    protocol: http
     hostname: testapp.test
   postgres:
     env_var: DB_PORT
