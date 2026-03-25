@@ -12,3 +12,6 @@ computed:
   CORS_ORIGINS:
     value: "${web.url}"
     env_file: .env
+  PC_SOCKET_PATH:
+    value: "/tmp/process-compose-${project_name}${instance:+-${instance}}.sock"
+    env_file: .pc_env
