@@ -24,30 +24,11 @@ suite("Diagnostics", () => {
   })
 
   suite("validateConfig", () => {
-    // Hostname requires protocol
-    test("errors when hostname set without protocol", () => {
-      const errors = validateConfig({
-        name: "myapp",
-        services: { web: { env_var: "PORT", hostname: "myapp.test" } },
-      })
-      assert.ok(
-        errors.some((e) => e.message.includes("hostname") && e.message.includes("protocol")),
-      )
-    })
-
-    test("no error when hostname has protocol", () => {
-      const errors = validateConfig({
-        name: "myapp",
-        services: { web: { env_var: "PORT", hostname: "myapp.test", protocol: "http" } },
-      })
-      assert.ok(!errors.some((e) => e.message.includes("protocol")))
-    })
-
     // Hostname must contain project name
     test("warns when hostname does not contain project name", () => {
       const errors = validateConfig({
         name: "myapp",
-        services: { web: { env_var: "PORT", hostname: "other.test", protocol: "http" } },
+        services: { web: { env_var: "PORT", hostname: "other.test" } },
       })
       assert.ok(
         errors.some(
@@ -59,7 +40,7 @@ suite("Diagnostics", () => {
     test("no warning when hostname contains project name", () => {
       const errors = validateConfig({
         name: "myapp",
-        services: { web: { env_var: "PORT", hostname: "myapp.test", protocol: "http" } },
+        services: { web: { env_var: "PORT", hostname: "myapp.test" } },
       })
       assert.ok(!errors.some((e) => e.message.includes("must contain project name")))
     })

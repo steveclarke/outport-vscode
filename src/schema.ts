@@ -5,7 +5,6 @@ import * as yaml from "js-yaml"
 
 export interface OutportService {
   env_var?: string
-  protocol?: string
   hostname?: string
   preferred_port?: number
   env_file?: string | string[]

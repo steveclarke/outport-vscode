@@ -25,18 +25,18 @@ suite("Tree Item Construction", () => {
     const service = {
       port: 24920,
       env_var: "PORT",
-      protocol: "http",
+      hostname: "myapp.test",
       url: "https://myapp.test",
       env_files: [".env"],
     }
-    const isHttp = service.protocol === "http" || service.protocol === "https"
+    const isHttp = !!service.hostname
     const contextValue = isHttp && service.url ? "httpService" : "service"
     assert.strictEqual(contextValue, "httpService")
   })
 
   test("service contextValue set for non-HTTP services", () => {
-    const service = { port: 5432, env_var: "DB_PORT", env_files: [".env"] }
-    const isHttp = (service as any).protocol === "http" || (service as any).protocol === "https"
+    const service = { port: 5432, env_var: "DB_PORT", env_files: [".env"] } as any
+    const isHttp = !!service.hostname
     const contextValue = isHttp ? "httpService" : "service"
     assert.strictEqual(contextValue, "service")
   })

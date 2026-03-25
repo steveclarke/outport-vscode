@@ -187,15 +187,6 @@ export function validateConfig(config: OutportConfig): DiagnosticError[] {
 
   // Service-level checks
   for (const [name, svc] of Object.entries(config.services)) {
-    if (svc.hostname && svc.protocol !== "http" && svc.protocol !== "https") {
-      errors.push({
-        message: `Service "${name}": hostname requires protocol http or https`,
-        severity: "error",
-        key: "hostname",
-        parentKey: name,
-      })
-    }
-
     if (svc.hostname && config.name) {
       const stem = svc.hostname.replace(/\.test$/, "")
       if (!stem.includes(config.name)) {

@@ -43,11 +43,6 @@
           "maximum": 65535,
           "description": "Preferred port number. Used if available, otherwise falls back to hash-based allocation."
         },
-        "protocol": {
-          "type": "string",
-          "enum": ["http", "https"],
-          "description": "Protocol for .test hostname. Required when hostname is set. Enables browser access via outport open."
-        },
         "hostname": {
           "type": "string",
           "description": "Hostname for .test domain (e.g., myapp.test, api.myapp.test). Must contain the project name. The .test suffix is optional in config but conventional.",

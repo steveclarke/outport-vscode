@@ -19,7 +19,7 @@ export class ServiceItem extends vscode.TreeItem {
   ) {
     super(serviceName, vscode.TreeItemCollapsibleState.None)
 
-    const isHttp = service.protocol === "http" || service.protocol === "https"
+    const isHttp = !!service.hostname
     const isUp = service.up === true
 
     this.description = `${service.env_var}=${service.port}`

@@ -8,7 +8,6 @@ export interface ServiceJSON {
   port: number
   env_var: string
   preferred_port?: number
-  protocol?: string
   hostname?: string
   url?: string
   up?: boolean

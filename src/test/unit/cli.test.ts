@@ -13,7 +13,6 @@ suite("CLI Output Parsing", () => {
         web: {
           port: 24920,
           env_var: "PORT",
-          protocol: "http",
           hostname: "myapp.test",
           url: "https://myapp.test",
           up: true,
@@ -46,7 +45,6 @@ suite("CLI Output Parsing", () => {
     })
 
     const data = JSON.parse(json)
-    assert.strictEqual(data.services.postgres.protocol, undefined)
     assert.strictEqual(data.services.postgres.hostname, undefined)
     assert.strictEqual(data.services.postgres.url, undefined)
     assert.strictEqual(data.services.postgres.up, undefined)
