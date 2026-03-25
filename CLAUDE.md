@@ -11,6 +11,10 @@ npm run test           # All tests (unit + integration, requires compile first)
 npm run test:unit      # Unit tests only
 ```
 
+## Releasing
+
+See [RELEASING.md](RELEASING.md) for the full release process.
+
 ## Testing
 
 - **Unit tests** (`src/test/unit/`): CLI parsing, tree item construction, diagnostics validation.
