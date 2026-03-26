@@ -1,4 +1,6 @@
 import * as assert from "assert"
+import * as vscode from "vscode"
+import { ServiceItem } from "../../sidebar/items"
 
 suite("Tree Item Construction", () => {
   test("ProjectItem shows name and instance", () => {
@@ -60,5 +62,20 @@ suite("Tree Item Construction", () => {
       message: "not found",
     }
     assert.strictEqual(check.status, "warn")
+  })
+
+  test("ServiceItem tooltip includes aliases", () => {
+    const item = new ServiceItem("web", {
+      port: 24920,
+      env_var: "PORT",
+      hostname: "myapp.test",
+      url: "https://myapp.test",
+      env_files: [".env"],
+      aliases: {
+        app: { hostname: "app.myapp.test", url: "https://app.myapp.test" },
+      },
+    })
+    const tooltip = (item.tooltip as vscode.MarkdownString).value
+    assert.ok(tooltip.includes("app.myapp.test"), "tooltip should include alias hostname")
   })
 })

@@ -33,6 +33,11 @@ export class ServiceItem extends vscode.TreeItem {
     this.tooltip.appendMarkdown(`- Env var: \`${service.env_var}\`\n`)
     if (service.hostname) this.tooltip.appendMarkdown(`- Hostname: \`${service.hostname}\`\n`)
     if (service.url) this.tooltip.appendMarkdown(`- URL: ${service.url}\n`)
+    if (service.aliases) {
+      for (const [label, alias] of Object.entries(service.aliases)) {
+        this.tooltip.appendMarkdown(`- Alias \`${label}\`: ${alias.url || alias.hostname}\n`)
+      }
+    }
     if (service.up !== undefined)
       this.tooltip.appendMarkdown(`- Status: ${isUp ? "listening" : "not listening"}\n`)
 
