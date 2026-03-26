@@ -6,7 +6,7 @@
 npm run compile        # TypeScript → /out (must run before tests)
 npm run watch          # TypeScript watch mode for development
 npm run build          # ESBuild production bundle (minified)
-npm run lint           # ESLint
+npm run lint           # oxlint
 npm run test           # All tests (unit + integration, requires compile first)
 npm run test:unit      # Unit tests only
 ```

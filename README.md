@@ -14,11 +14,13 @@
 
 ## Features
 
-- **Sidebar panel** — Services, ports, URLs, and health indicators in the Activity Bar
+- **Sidebar panel** — Services, ports, URLs, hostname aliases, and health indicators in the Activity Bar
 - **Clickable URLs** — Click any HTTP service to open it in your browser
 - **Copy to clipboard** — Right-click to copy ports, URLs, or env var assignments
+- **Sharing** — Start and stop Cloudflare tunnels to share services publicly
 - **Status bar** — Shows your project name and instance at a glance
-- **Config authoring** — Autocomplete and validation for `outport.yml`
+- **System health** — Runs `outport doctor` and surfaces warnings in the sidebar
+- **Config authoring** — Schema validation, template autocomplete (`${service.port}`, `${service.alias.label}`, `${instance}`, etc.), hover with live resolved values, and go-to-definition for service references
 - **Auto-refresh** — Sidebar updates when you run `outport up` or `outport down`, or when external changes are detected
 
 ## Requirements
@@ -35,6 +37,8 @@ All commands are available from the Command Palette (Cmd+Shift+P):
 | **Outport: Run Up** | Allocate ports and write `.env` files |
 | **Outport: Run Up --force** | Re-allocate all ports from scratch |
 | **Outport: Run Down** | Remove project from registry and clean `.env` files |
+| **Outport: Share** | Create public tunnel URLs for HTTP services |
+| **Outport: Stop Sharing** | Stop sharing and close tunnels |
 | **Outport: Refresh** | Refresh the sidebar panel |
 
 ## Settings
