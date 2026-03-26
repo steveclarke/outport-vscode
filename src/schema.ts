@@ -8,6 +8,7 @@ export interface OutportService {
   hostname?: string
   preferred_port?: number
   env_file?: string | string[]
+  aliases?: Record<string, string>
 }
 
 export interface OutportComputedValue {

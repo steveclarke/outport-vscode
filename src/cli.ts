@@ -4,6 +4,11 @@ import * as vscode from "vscode"
 
 const execFileAsync = promisify(execFile)
 
+export interface AliasJSON {
+  hostname: string
+  url?: string
+}
+
 export interface ServiceJSON {
   port: number
   env_var: string
@@ -12,6 +17,7 @@ export interface ServiceJSON {
   url?: string
   up?: boolean
   env_files: string[]
+  aliases?: Record<string, AliasJSON>
 }
 
 export interface ComputedJSON {

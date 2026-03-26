@@ -1,5 +1,5 @@
 import * as assert from "assert"
-import { categorizeCliError, buildUpArgs, buildDownArgs } from "../../cli"
+import { categorizeCliError, buildUpArgs, buildDownArgs, PortsOutput } from "../../cli"
 
 // We test the parsing logic in isolation — we can't easily test execFile in unit tests
 // so we test the type contracts and JSON parsing
@@ -49,6 +49,28 @@ suite("CLI Output Parsing", () => {
     assert.strictEqual(data.services.postgres.url, undefined)
     assert.strictEqual(data.services.postgres.up, undefined)
     assert.strictEqual(data.computed, undefined)
+  })
+
+  test("parses service alias data from JSON", () => {
+    const json = `{
+      "project": "myapp", "instance": "main",
+      "services": {
+        "web": {
+          "port": 24920, "env_var": "PORT",
+          "hostname": "myapp.test", "url": "https://myapp.test",
+          "env_files": [".env"],
+          "aliases": {
+            "app": { "hostname": "app.myapp.test", "url": "https://app.myapp.test" },
+            "admin": { "hostname": "admin.myapp.test", "url": "https://admin.myapp.test" }
+          }
+        }
+      },
+      "env_files": [".env"]
+    }`
+    const data = JSON.parse(json) as PortsOutput
+    assert.strictEqual(Object.keys(data.services.web.aliases!).length, 2)
+    assert.strictEqual(data.services.web.aliases!.app.hostname, "app.myapp.test")
+    assert.strictEqual(data.services.web.aliases!.admin.url, "https://admin.myapp.test")
   })
 })
 

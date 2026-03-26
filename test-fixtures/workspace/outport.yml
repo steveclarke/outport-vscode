@@ -4,6 +4,9 @@ services:
   web:
     env_var: PORT
     hostname: testapp.test
+    aliases:
+      app: app.testapp.test
+      admin: admin.testapp.test
   postgres:
     env_var: DB_PORT
     preferred_port: 5432

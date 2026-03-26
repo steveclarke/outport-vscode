@@ -54,6 +54,14 @@
             { "type": "string" },
             { "type": "array", "items": { "type": "string" } }
           ]
+        },
+        "aliases": {
+          "type": "object",
+          "description": "Named additional hostnames for this service. Each key is a label and the value is the hostname. Requires a primary hostname to be set.",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(\\..+)?$"
+          }
         }
       }
     },
