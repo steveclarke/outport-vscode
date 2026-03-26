@@ -19,6 +19,13 @@
         "$ref": "#/definitions/service"
       }
     },
+    "open": {
+      "type": "array",
+      "description": "Services to open by default with 'outport open'. When omitted, all services with a hostname are opened.",
+      "items": {
+        "type": "string"
+      }
+    },
     "computed": {
       "type": "object",
       "description": "Computed values derived from service ports and hostnames. Written to .env files alongside service ports.",

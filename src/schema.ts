@@ -18,6 +18,7 @@ export interface OutportComputedValue {
 
 export interface OutportConfig {
   name?: string
+  open?: string[]
   services?: Record<string, OutportService>
   computed?: Record<string, OutportComputedValue>
 }
