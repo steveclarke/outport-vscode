@@ -57,19 +57,47 @@ class OutportCompletionProvider implements vscode.CompletionItemProvider {
       })
     }
 
-    // After "${service." — suggest fields
+    // After "${service.alias." or "${service.alias_url." — suggest alias labels
+    const aliasLabelMatch = inner.match(/^(\w+)\.(alias|alias_url)\.(\w*)$/)
+    if (aliasLabelMatch) {
+      const [, svcName, aliasField, partial] = aliasLabelMatch
+      const svc = config.services[svcName]
+      if (!svc?.aliases) return []
+      const dotIdx = openIdx + 2 + svcName.length + 1 + aliasField.length + 1
+      const replaceRange = new vscode.Range(line, dotIdx, line, dotIdx + partial.length)
+      return Object.keys(svc.aliases).map((label) => {
+        const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Value)
+        item.detail = `\${${svcName}.${aliasField}.${label}}`
+        item.range = replaceRange
+        return item
+      })
+    }
+
+    // After "${service." — suggest fields + alias/alias_url
     const fieldMatch = inner.match(/^(\w+)\.(\w*)$/)
     if (fieldMatch) {
       const [, svcName, partial] = fieldMatch
       if (!config.services[svcName]) return []
       const dotIdx = openIdx + 2 + svcName.length + 1
       const replaceRange = new vscode.Range(line, dotIdx, line, dotIdx + partial.length)
-      return TEMPLATE_FIELDS.map((f) => {
+      const items = TEMPLATE_FIELDS.map((f) => {
         const item = new vscode.CompletionItem(f, vscode.CompletionItemKind.Field)
         item.detail = `\${${svcName}.${f}}`
         item.range = replaceRange
         return item
       })
+      // Add alias/alias_url if service has aliases
+      const svc = config.services[svcName]
+      if (svc.aliases) {
+        for (const field of ["alias", "alias_url"]) {
+          const item = new vscode.CompletionItem(field, vscode.CompletionItemKind.Field)
+          item.detail = `\${${svcName}.${field}.LABEL}`
+          item.range = replaceRange
+          item.command = { command: "editor.action.triggerSuggest", title: "" }
+          items.push(item)
+        }
+      }
+      return items
     }
 
     // After "${" — suggest service names and standalone vars
@@ -116,6 +144,33 @@ class OutportHoverProvider implements vscode.HoverProvider {
     const line = position.line
     const range = new vscode.Range(line, openIdx, line, endIdx + 1) // include ${ and }
 
+    // Match ${service.alias.label} or ${service.alias_url.label}
+    const aliasMatch = inner.match(/^(\w+)\.(alias|alias_url)\.(\w+)$/)
+    if (aliasMatch) {
+      const [, svcName, field, label] = aliasMatch
+      const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+      if (cwd) {
+        const result = await getPorts(cwd)
+        if (result.ok) {
+          const liveSvc = result.data.services[svcName]
+          if (liveSvc?.aliases?.[label]) {
+            const alias = liveSvc.aliases[label]
+            const value = field === "alias" ? alias.hostname : alias.url
+            if (value) {
+              const md = new vscode.MarkdownString()
+              md.appendCodeblock(value, "text")
+              md.appendMarkdown(`\n\n*\`\${${inner}}\` — resolved from registry*`)
+              return new vscode.Hover(md, range)
+            }
+          }
+        }
+      }
+      const md = new vscode.MarkdownString()
+      md.appendMarkdown(`**\${${inner}}**\n\n`)
+      md.appendMarkdown(`Service: \`${svcName}\`  \nAlias: \`${label}\`  \nField: \`${field}\``)
+      return new vscode.Hover(md, range)
+    }
+
     // Match ${service.field} or ${service.field:modifier}
     const refMatch = inner.match(/^(\w+)\.(\w+)(?::(\w+))?$/)
     if (refMatch) {
@@ -133,6 +188,7 @@ class OutportHoverProvider implements vscode.HoverProvider {
             let value: string | undefined
             if (field === "port") value = String(liveSvc.port)
             else if (field === "hostname") value = liveSvc.hostname
+            else if (field === "env_var") value = liveSvc.env_var
             else if (field === "url" && modifier === "direct") {
               value = liveSvc.port ? `http://localhost:${liveSvc.port}` : undefined
             } else if (field === "url") value = liveSvc.url
@@ -155,7 +211,7 @@ class OutportHoverProvider implements vscode.HoverProvider {
       return new vscode.Hover(md, range)
     }
 
-    // Match standalone ${instance}
+    // Match standalone ${instance} or ${project_name}
     const standaloneMatch = inner.match(/^(\w+)$/)
     if (standaloneMatch) {
       const varName = standaloneMatch[1]
@@ -165,12 +221,22 @@ class OutportHoverProvider implements vscode.HoverProvider {
           const result = await getPorts(cwd)
           if (result.ok) {
             const md = new vscode.MarkdownString()
-            md.appendCodeblock(result.data.instance, "text")
-            md.appendMarkdown(`\n\n*\`\${instance}\` → current instance name*`)
+            if (varName === "instance") {
+              md.appendCodeblock(result.data.instance, "text")
+              md.appendMarkdown(`\n\n*\`\${instance}\` — current instance name*`)
+            } else if (varName === "project_name") {
+              md.appendCodeblock(result.data.project, "text")
+              md.appendMarkdown(`\n\n*\`\${project_name}\` — project name from outport.yml*`)
+            }
             return new vscode.Hover(md, range)
           }
         }
-        return new vscode.Hover(`\`\${instance}\` — current instance name (e.g. "main")`, range)
+        if (varName === "instance") {
+          return new vscode.Hover(`\`\${instance}\` — current instance name (e.g. "main")`, range)
+        }
+        if (varName === "project_name") {
+          return new vscode.Hover(`\`\${project_name}\` — project name from outport.yml`, range)
+        }
       }
     }
 
