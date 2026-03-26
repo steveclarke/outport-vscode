@@ -64,7 +64,7 @@
       "properties": {
         "value": {
           "type": "string",
-          "description": "Template string using ${service.field} syntax. Fields: port, hostname, url. Modifiers: url:direct. Standalone vars: ${project_name}, ${instance}. Conditionals: ${var:-default}, ${var:+replacement}."
+          "description": "Template string using ${service.field} syntax. Fields: port, hostname, url, env_var. Modifiers: url:direct. Standalone vars: ${project_name}, ${instance}. Conditionals: ${var:-default}, ${var:+replacement}."
         },
         "env_file": {
           "description": "Where to write the computed value. Can be a string, array of strings, or array of objects with file and value for per-file overrides.",

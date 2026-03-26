@@ -23,7 +23,7 @@ export interface OutportConfig {
 
 // --- Template expression constants ---
 
-export const TEMPLATE_FIELDS = ["port", "hostname", "url"]
+export const TEMPLATE_FIELDS = ["port", "hostname", "url", "env_var"]
 export const TEMPLATE_MODIFIERS: Record<string, string[]> = {
   url: ["direct"],
 }

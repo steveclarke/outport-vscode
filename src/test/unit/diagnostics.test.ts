@@ -124,6 +124,17 @@ suite("Diagnostics", () => {
       assert.ok(errors.some((e) => e.message.includes("unknown field")))
     })
 
+    test("accepts env_var as a valid template field", () => {
+      const errors = validateConfig({
+        name: "myapp",
+        services: { web: { env_var: "PORT" } },
+        computed: {
+          MY_VAR: { value: "${web.env_var}", env_file: ".env" },
+        },
+      })
+      assert.strictEqual(errors.length, 0)
+    })
+
     // Template: invalid modifier
     test("errors on invalid modifier", () => {
       const errors = validateConfig({

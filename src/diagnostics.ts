@@ -125,7 +125,7 @@ function validateTemplateRefs(
       })
     } else if (!TEMPLATE_FIELDS.includes(field)) {
       errors.push({
-        message: `Computed "${computedName}": unknown field "${field}" (valid: port, hostname, url)`,
+        message: `Computed "${computedName}": unknown field "${field}" (valid: ${TEMPLATE_FIELDS.join(", ")})`,
         severity: "error",
         key: computedName,
         parentKey: "computed",
