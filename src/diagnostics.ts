@@ -225,6 +225,15 @@ export function validateConfig(config: OutportConfig): DiagnosticError[] {
         })
       }
     }
+
+    if (svc.aliases && !svc.hostname) {
+      errors.push({
+        message: `Service "${name}": aliases requires a primary hostname`,
+        severity: "error",
+        key: "aliases",
+        parentKey: name,
+      })
+    }
   }
 
   // Computed value checks

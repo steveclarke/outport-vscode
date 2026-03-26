@@ -243,5 +243,13 @@ suite("Diagnostics", () => {
       assert.strictEqual(errors.length, 1)
       assert.ok(errors[0].message.includes('unknown alias "nope"'))
     })
+
+    test("errors when aliases set without hostname", () => {
+      const errors = validateConfig({
+        name: "myapp",
+        services: { web: { env_var: "PORT", aliases: { app: "app.myapp.test" } } },
+      })
+      assert.ok(errors.some((e) => e.message.includes("requires a primary hostname")))
+    })
   })
 })
