@@ -164,6 +164,19 @@ suite("Diagnostics", () => {
       assert.ok(errors.some((e) => e.message.includes("unknown variable")))
     })
 
+    test("unknown standalone var message lists all valid vars", () => {
+      const errors = validateConfig({
+        name: "myapp",
+        services: { web: { env_var: "PORT" } },
+        computed: {
+          MY_VAR: { value: "${bogus}", env_file: ".env" },
+        },
+      })
+      assert.strictEqual(errors.length, 1)
+      assert.ok(errors[0].message.includes("instance"), "should mention instance")
+      assert.ok(errors[0].message.includes("project_name"), "should mention project_name")
+    })
+
     test("allows ${instance} standalone variable", () => {
       const errors = validateConfig({
         name: "myapp",

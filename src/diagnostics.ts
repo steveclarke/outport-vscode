@@ -148,7 +148,7 @@ function validateTemplateRefs(
     const varName = match[1] || match[2]
     if (!STANDALONE_VARS.includes(varName)) {
       errors.push({
-        message: `Computed "${computedName}": unknown variable "${varName}" (valid: instance)`,
+        message: `Computed "${computedName}": unknown variable "${varName}" (valid: ${STANDALONE_VARS.join(", ")})`,
         severity: "error",
         key: computedName,
         parentKey: "computed",
