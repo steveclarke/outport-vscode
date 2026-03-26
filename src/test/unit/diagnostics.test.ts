@@ -185,5 +185,63 @@ suite("Diagnostics", () => {
       })
       assert.ok(!errors.some((e) => e.message.includes("unknown variable")))
     })
+
+    test("accepts alias template reference", () => {
+      const errors = validateConfig({
+        name: "myapp",
+        services: { web: { env_var: "PORT", hostname: "myapp.test", aliases: { app: "app.myapp.test" } } },
+        computed: {
+          APP_HOST: { value: "${web.alias.app}", env_file: ".env" },
+        },
+      })
+      assert.strictEqual(errors.length, 0)
+    })
+
+    test("accepts alias_url template reference", () => {
+      const errors = validateConfig({
+        name: "myapp",
+        services: { web: { env_var: "PORT", hostname: "myapp.test", aliases: { app: "app.myapp.test" } } },
+        computed: {
+          APP_URL: { value: "${web.alias_url.app}", env_file: ".env" },
+        },
+      })
+      assert.strictEqual(errors.length, 0)
+    })
+
+    test("flags alias reference to unknown service", () => {
+      const errors = validateConfig({
+        name: "myapp",
+        services: { web: { env_var: "PORT" } },
+        computed: {
+          X: { value: "${nope.alias.app}", env_file: ".env" },
+        },
+      })
+      assert.strictEqual(errors.length, 1)
+      assert.ok(errors[0].message.includes("unknown service"))
+    })
+
+    test("flags alias reference to unknown label (service has no aliases)", () => {
+      const errors = validateConfig({
+        name: "myapp",
+        services: { web: { env_var: "PORT", hostname: "myapp.test" } },
+        computed: {
+          X: { value: "${web.alias.app}", env_file: ".env" },
+        },
+      })
+      assert.strictEqual(errors.length, 1)
+      assert.ok(errors[0].message.includes('unknown alias "app"'))
+    })
+
+    test("flags alias reference to unknown alias label", () => {
+      const errors = validateConfig({
+        name: "myapp",
+        services: { web: { env_var: "PORT", hostname: "myapp.test", aliases: { app: "app.myapp.test" } } },
+        computed: {
+          X: { value: "${web.alias.nope}", env_file: ".env" },
+        },
+      })
+      assert.strictEqual(errors.length, 1)
+      assert.ok(errors[0].message.includes('unknown alias "nope"'))
+    })
   })
 })

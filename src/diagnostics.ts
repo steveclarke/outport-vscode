@@ -21,6 +21,7 @@ export interface DiagnosticError {
 // --- Template validation constants ---
 
 const TEMPLATE_VAR_RE = /\$\{(\w+)\.(\w+)(?::(\w+))?\}/g
+const ALIAS_VAR_RE = /\$\{(\w+)\.(alias|alias_url)\.(\w+)\}/g
 const STANDALONE_VAR_RE = /\$\{(\w+)\}|\$\{(\w+):[+-]/g
 
 // --- Position mapping ---
@@ -112,10 +113,35 @@ function validateTemplateRefs(
 ): DiagnosticError[] {
   const errors: DiagnosticError[] = []
 
+  // 1. Check alias refs (3-segment: ${service.alias.label} / ${service.alias_url.label})
   let match
+  ALIAS_VAR_RE.lastIndex = 0
+  while ((match = ALIAS_VAR_RE.exec(template)) !== null) {
+    const [, svcName, , label] = match
+    const svc = services[svcName]
+    if (!svc) {
+      errors.push({
+        message: `Computed "${computedName}": references unknown service "${svcName}"`,
+        severity: "error",
+        key: computedName,
+        parentKey: "computed",
+      })
+    } else if (!svc.aliases?.[label]) {
+      errors.push({
+        message: `Computed "${computedName}": service "${svcName}" has unknown alias "${label}"`,
+        severity: "error",
+        key: computedName,
+        parentKey: "computed",
+      })
+    }
+  }
+
+  // 2. Check standard service.field refs, skip alias/alias_url (handled above)
   TEMPLATE_VAR_RE.lastIndex = 0
   while ((match = TEMPLATE_VAR_RE.exec(template)) !== null) {
     const [, svcName, field, modifier] = match
+    if (field === "alias" || field === "alias_url") continue
+
     if (!services[svcName]) {
       errors.push({
         message: `Computed "${computedName}": references unknown service "${svcName}"`,
@@ -143,6 +169,7 @@ function validateTemplateRefs(
     }
   }
 
+  // 3. Check standalone vars
   STANDALONE_VAR_RE.lastIndex = 0
   while ((match = STANDALONE_VAR_RE.exec(template)) !== null) {
     const varName = match[1] || match[2]
