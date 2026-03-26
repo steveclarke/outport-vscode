@@ -189,7 +189,9 @@ suite("Diagnostics", () => {
     test("accepts alias template reference", () => {
       const errors = validateConfig({
         name: "myapp",
-        services: { web: { env_var: "PORT", hostname: "myapp.test", aliases: { app: "app.myapp.test" } } },
+        services: {
+          web: { env_var: "PORT", hostname: "myapp.test", aliases: { app: "app.myapp.test" } },
+        },
         computed: {
           APP_HOST: { value: "${web.alias.app}", env_file: ".env" },
         },
@@ -200,7 +202,9 @@ suite("Diagnostics", () => {
     test("accepts alias_url template reference", () => {
       const errors = validateConfig({
         name: "myapp",
-        services: { web: { env_var: "PORT", hostname: "myapp.test", aliases: { app: "app.myapp.test" } } },
+        services: {
+          web: { env_var: "PORT", hostname: "myapp.test", aliases: { app: "app.myapp.test" } },
+        },
         computed: {
           APP_URL: { value: "${web.alias_url.app}", env_file: ".env" },
         },
@@ -235,7 +239,9 @@ suite("Diagnostics", () => {
     test("flags alias reference to unknown alias label", () => {
       const errors = validateConfig({
         name: "myapp",
-        services: { web: { env_var: "PORT", hostname: "myapp.test", aliases: { app: "app.myapp.test" } } },
+        services: {
+          web: { env_var: "PORT", hostname: "myapp.test", aliases: { app: "app.myapp.test" } },
+        },
         computed: {
           X: { value: "${web.alias.nope}", env_file: ".env" },
         },
