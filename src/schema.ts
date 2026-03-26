@@ -27,7 +27,7 @@ export const TEMPLATE_FIELDS = ["port", "hostname", "url"]
 export const TEMPLATE_MODIFIERS: Record<string, string[]> = {
   url: ["direct"],
 }
-export const STANDALONE_VARS = ["instance"]
+export const STANDALONE_VARS = ["instance", "project_name"]
 
 // --- File matching ---
 
