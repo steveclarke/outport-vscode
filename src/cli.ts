@@ -60,6 +60,24 @@ export function categorizeCliError(
 
 export type CliResult<T> = { ok: true; data: T } | { ok: false; error: CliError }
 
+// JSON envelope types matching CLI --json output
+interface JsonEnvelope<T> {
+  ok: boolean
+  data?: T
+  error?: string
+  hint?: string
+}
+
+/** Unwrap the CLI JSON envelope, returning the inner data or a categorized error. */
+export function unwrapEnvelope<T>(json: string): CliResult<T> {
+  const envelope = JSON.parse(json) as JsonEnvelope<T>
+  if (!envelope.ok) {
+    const msg = envelope.error || "Unknown CLI error"
+    return { ok: false, error: categorizeCliError(msg, undefined, "outport") }
+  }
+  return { ok: true, data: envelope.data as T }
+}
+
 function getBinaryPath(): string {
   const config = vscode.workspace.getConfiguration("outport")
   return config.get<string>("binaryPath", "outport")
@@ -74,21 +92,31 @@ async function runOutport(args: string[], cwd: string): Promise<CliResult<string
     })
     return { ok: true, data: stdout }
   } catch (err: any) {
+    // With --json, errors are returned as JSON on stdout, not stderr
+    if (err.stdout) {
+      try {
+        const envelope = JSON.parse(err.stdout.trim()) as JsonEnvelope<unknown>
+        if (!envelope.ok && envelope.error) {
+          return { ok: false, error: categorizeCliError(envelope.error, err.code, bin) }
+        }
+      } catch {
+        /* not JSON, fall through to stderr handling */
+      }
+    }
     const stderr = err.stderr?.trim() || err.message
     return { ok: false, error: categorizeCliError(stderr, err.code, bin) }
   }
 }
 
 export async function getPorts(cwd: string): Promise<CliResult<PortsOutput>> {
-  const result = await runOutport(["ports", "--json", "--check", "--computed"], cwd)
+  const result = await runOutport(["status", "--json", "--computed"], cwd)
   if (!result.ok) return result
   try {
     const trimmed = result.data.trim()
     if (!trimmed.startsWith("{")) {
       return { ok: false, error: { kind: "not-registered", message: trimmed } }
     }
-    const data = JSON.parse(trimmed) as PortsOutput
-    return { ok: true, data }
+    return unwrapEnvelope<PortsOutput>(trimmed)
   } catch {
     return {
       ok: false,
@@ -174,10 +202,12 @@ export function startShare(
   proc.stdout?.on("data", (chunk: Buffer) => {
     stdout += chunk.toString()
     try {
-      const data = JSON.parse(stdout.trim()) as ShareOutput
+      const envelope = JSON.parse(stdout.trim()) as JsonEnvelope<ShareOutput>
       stdout = ""
-      if (data.tunnels) {
-        onTunnels(data.tunnels)
+      if (envelope.ok && envelope.data?.tunnels) {
+        onTunnels(envelope.data.tunnels)
+      } else if (!envelope.ok && envelope.error) {
+        onError(envelope.error)
       }
     } catch {
       // Not complete yet, keep buffering
@@ -226,14 +256,12 @@ export async function runDoctor(cwd: string): Promise<CliResult<DoctorOutput>> {
   const bin = getBinaryPath()
   try {
     const { stdout } = await execFileAsync(bin, ["doctor", "--json"], { cwd, timeout: 15_000 })
-    const data = JSON.parse(stdout.trim()) as DoctorOutput
-    return { ok: true, data }
+    return unwrapEnvelope<DoctorOutput>(stdout.trim())
   } catch (err: any) {
-    // doctor exits non-zero when checks fail, but stdout still has the JSON
+    // doctor exits non-zero when checks fail, but stdout still has the JSON envelope
     if (err.stdout) {
       try {
-        const data = JSON.parse(err.stdout.trim()) as DoctorOutput
-        return { ok: true, data }
+        return unwrapEnvelope<DoctorOutput>(err.stdout.trim())
       } catch {
         /* fall through */
       }

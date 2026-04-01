@@ -1,5 +1,11 @@
 import * as assert from "assert"
-import { categorizeCliError, buildUpArgs, buildDownArgs, PortsOutput } from "../../cli"
+import {
+  categorizeCliError,
+  buildUpArgs,
+  buildDownArgs,
+  unwrapEnvelope,
+  PortsOutput,
+} from "../../cli"
 
 // We test the parsing logic in isolation — we can't easily test execFile in unit tests
 // so we test the type contracts and JSON parsing
@@ -71,6 +77,47 @@ suite("CLI Output Parsing", () => {
     assert.strictEqual(Object.keys(data.services.web.aliases!).length, 2)
     assert.strictEqual(data.services.web.aliases!.app.hostname, "app.myapp.test")
     assert.strictEqual(data.services.web.aliases!.admin.url, "https://admin.myapp.test")
+  })
+})
+
+suite("JSON Envelope Unwrapping", () => {
+  test("unwraps success envelope", () => {
+    const json = JSON.stringify({
+      ok: true,
+      data: { project: "myapp", instance: "main", services: {}, env_files: [] },
+      summary: "0 services",
+    })
+    const result = unwrapEnvelope<PortsOutput>(json)
+    assert.strictEqual(result.ok, true)
+    if (result.ok) {
+      assert.strictEqual(result.data.project, "myapp")
+    }
+  })
+
+  test("unwraps error envelope as cli-error", () => {
+    const json = JSON.stringify({
+      ok: false,
+      error: "something went wrong",
+      hint: "try this",
+    })
+    const result = unwrapEnvelope<PortsOutput>(json)
+    assert.strictEqual(result.ok, false)
+    if (!result.ok) {
+      assert.strictEqual(result.error.kind, "cli-error")
+      assert.strictEqual(result.error.message, "something went wrong")
+    }
+  })
+
+  test("categorizes not-registered from error envelope", () => {
+    const json = JSON.stringify({
+      ok: false,
+      error: "No outport.yml found in /tmp or any parent directory.",
+    })
+    const result = unwrapEnvelope<PortsOutput>(json)
+    assert.strictEqual(result.ok, false)
+    if (!result.ok) {
+      assert.strictEqual(result.error.kind, "not-registered")
+    }
   })
 })
 
