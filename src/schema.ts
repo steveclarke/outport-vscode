@@ -9,6 +9,7 @@ export interface OutportService {
   preferred_port?: number
   env_file?: string | string[]
   aliases?: Record<string, string>
+  subdomains?: boolean
 }
 
 export interface OutportComputedValue {
