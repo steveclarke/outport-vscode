@@ -69,6 +69,11 @@
             "type": "string",
             "pattern": "^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(\\..+)?$"
           }
+        },
+        "subdomains": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable wildcard subdomain routing. When true, all subdomains of the primary hostname route to the same port (e.g., *.myapp.test). Requires a primary hostname."
         }
       }
     },
